@@ -390,4 +390,22 @@ PointToPointEpc6Pmipv6Helper::Initialize (Mac48Address tunDevMacAddress)
   m_pmipv6MagHelper.Install (m_sgw, true);
 }
 
+
+/**
+ * Assign IPv4 addresses to UE devices
+ *
+ * \param ueDevices the set of UE devices
+ *
+ * \return the interface container, \see Ipv4AddressHelper::Assign() which has similar semantics
+ */
+Ipv4InterfaceContainer PointToPointEpc6Pmipv6Helper::AssignUeIpv4Address (NetDeviceContainer ueDevices)
+{
+	return Ipv4InterfaceContainer();
+}
+
+Ipv4Address PointToPointEpc6Pmipv6Helper::GetUeDefaultGatewayAddress ()
+{
+	return Ipv4Address();
+}
+
 } // namespace ns3

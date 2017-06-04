@@ -72,8 +72,9 @@ public:
   virtual uint8_t ActivateEpsBearer (Ptr<NetDevice> ueLteDevice, uint64_t imsi, Ptr<EpcTft> tft, EpsBearer bearer);
   virtual Ptr<Node> GetPgwNode ();
   virtual Ipv6InterfaceContainer AssignUeIpv6Address (NetDeviceContainer ueDevices);
-//  virtual Ipv6Address GetUeDefaultGatewayAddress ();
-//  virtual Ipv4Address GetUeDefaultGatewayAddress ();
+  virtual Ipv4InterfaceContainer AssignUeIpv4Address (NetDeviceContainer ueDevices);
+  virtual Ipv6Address GetUeDefaultGatewayAddress6 ();
+  virtual Ipv4Address GetUeDefaultGatewayAddress ();
 
 private:
 

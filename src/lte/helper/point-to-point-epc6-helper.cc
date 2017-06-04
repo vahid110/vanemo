@@ -325,17 +325,28 @@ PointToPointEpc6Helper::GetPgwNode ()
   return m_sgwPgw;
 }
 
+
+Ipv4Address PointToPointEpc6Helper::GetUeDefaultGatewayAddress ()
+{
+	return Ipv4Address();
+}
+
+Ipv4InterfaceContainer PointToPointEpc6Helper::AssignUeIpv4Address (NetDeviceContainer ueDevices)
+{
+	return Ipv4InterfaceContainer();
+}
+
 Ipv6InterfaceContainer
 PointToPointEpc6Helper::AssignUeIpv6Address (NetDeviceContainer ueDevices)
 {
   return m_ueAddressHelper.Assign (ueDevices);
 }
 
-//Ipv6Address
-//PointToPointEpc6Helper::GetUeDefaultGatewayAddress ()
-//{
-//  // return the address of the tun device
-//  return m_sgwPgw->GetObject<Ipv6> ()->GetAddress (1, 1).GetAddress ();
-//}
+Ipv6Address
+PointToPointEpc6Helper::GetUeDefaultGatewayAddress6 ()
+{
+  // return the address of the tun device
+  return m_sgwPgw->GetObject<Ipv6> ()->GetAddress (1, 1).GetAddress ();
+}
 
 } // namespace ns3

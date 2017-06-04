@@ -41,14 +41,17 @@
 #include "lte-ue-phy.h"
 #include "epc-ue-nas.h"
 #include <ns3/ipv4-l3-protocol.h>
+#include <ns3/ipv6-l3-protocol.h>
 #include <ns3/log.h>
 #include "epc-tft.h"
-
-namespace ns3 {
+#include "ns3/ppp-header.h"
 
 NS_LOG_COMPONENT_DEFINE ("LteUeNetDevice");
 
-NS_OBJECT_ENSURE_REGISTERED ( LteUeNetDevice);
+namespace ns3 {
+
+NS_OBJECT_ENSURE_REGISTERED ( LteUeNetDevice)
+  ;
 
 
 TypeId LteUeNetDevice::GetTypeId (void)
@@ -252,11 +255,19 @@ bool
 LteUeNetDevice::Send (Ptr<Packet> packet, const Address& dest, uint16_t protocolNumber)
 {
   NS_LOG_FUNCTION (this << dest << protocolNumber);
-  if (protocolNumber != Ipv4L3Protocol::PROT_NUMBER)
+  if (protocolNumber != Ipv4L3Protocol::PROT_NUMBER && protocolNumber != Ipv6L3Protocol::PROT_NUMBER)
     {
-      NS_LOG_INFO("unsupported protocol " << protocolNumber << ", only IPv4 is supported");
+      NS_LOG_INFO("unsupported protocol " << protocolNumber);
       return true;
-    }  
+    }
+  Ptr<Packet> pCopy = packet->Copy ();
+  PppHeader pppHeader;
+  if (protocolNumber == Ipv4L3Protocol::PROT_NUMBER)
+    pppHeader.SetProtocol (0x0021);
+  else
+    pppHeader.SetProtocol (0x0057);
+  pCopy->AddHeader (pppHeader);
+  m_snifferTrace (pCopy);
   return m_nas->Send (packet);
 }
 

@@ -87,8 +87,9 @@ public:
    * \param ecgi E-UTRAN Cell Global ID, the unique identifier of the eNodeB
    * \param enbS1apSap the ENB side of the S1-AP SAP 
    */
-  void AddEnb (uint16_t ecgi, Ipv4Address enbS1UAddr, EpcS1apSapEnb* enbS1apSap);
-  /**
+  void AddEnb (uint16_t gci, Ipv4Address enbS1uAddr, EpcS1apSapEnb* enbS1apSap);
+  
+  /** 
    * Add a new ENB to the MME.
    * \param ecgi E-UTRAN Cell Global ID, the unique identifier of the eNodeB
    * \param enbS1apSap the ENB side of the S1-AP SAP

@@ -216,7 +216,10 @@ void RegularUnicastRadvd::Send (Ptr<UnicastRadvdInterface> config, Ipv6Address d
 
   if (reschedule)
     {
-      UniformRandomVariable rnd;
+	  static int64_t stream = 1;
+      UniformRandomVariable rnd ;
+      rnd.SetStream(stream);
+      stream += rnd.GetStream();
       uint64_t delay = static_cast<uint64_t> (rnd.GetValue (config->GetMinRtrAdvInterval (), config->GetMaxRtrAdvInterval ()) + 0.5);
       NS_LOG_INFO ("Reschedule in " << delay);
       Time t = MilliSeconds (delay);

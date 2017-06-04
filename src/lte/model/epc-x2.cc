@@ -33,6 +33,7 @@ NS_LOG_COMPONENT_DEFINE ("EpcX2");
 
 X2IfaceInfo::X2IfaceInfo (Ipv4Address remoteIpAddr, Ptr<Socket> localCtrlPlaneSocket, Ptr<Socket> localUserPlaneSocket)
 {
+  m_isIpv4 = true;
   m_remoteIpAddr = remoteIpAddr;
   m_localCtrlPlaneSocket = localCtrlPlaneSocket;
   m_localUserPlaneSocket = localUserPlaneSocket;
@@ -57,6 +58,7 @@ X2IfaceInfo&
 X2IfaceInfo::operator= (const X2IfaceInfo& value)
 {
   NS_LOG_FUNCTION (this);
+  m_isIpv4 = value.m_isIpv4;
   m_remoteIpAddr = value.m_remoteIpAddr;
   m_localCtrlPlaneSocket = value.m_localCtrlPlaneSocket;
   m_localUserPlaneSocket = value.m_localUserPlaneSocket;
@@ -456,10 +458,18 @@ EpcX2::DoSendHandoverRequest (EpcX2SapProvider::HandoverRequestParams params)
                  "Missing infos for targetCellId = " << params.targetCellId);
   Ptr<X2IfaceInfo> socketInfo = m_x2InterfaceSockets [params.targetCellId];
   Ptr<Socket> sourceSocket = socketInfo->m_localCtrlPlaneSocket;
-  Ipv4Address targetIpAddr = socketInfo->m_remoteIpAddr;
+  Ipv4Address targetIpAddr;
+  Ipv6Address targetIpAddr6;
+  if (socketInfo->m_isIpv4)
+    targetIpAddr = socketInfo->m_remoteIpAddr;
+  else
+    targetIpAddr6 = socketInfo->m_remoteIpAddr6;
 
   NS_LOG_LOGIC ("sourceSocket = " << sourceSocket);
-  NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr);
+  if (socketInfo->m_isIpv4)
+    NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr);
+  else
+    NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr);
 
   NS_LOG_INFO ("Send X2 message: HANDOVER REQUEST");
 
@@ -489,7 +499,10 @@ EpcX2::DoSendHandoverRequest (EpcX2SapProvider::HandoverRequestParams params)
   NS_LOG_INFO ("packetLen = " << packet->GetSize ());
 
   // Send the X2 message through the socket
-  sourceSocket->SendTo (packet, 0, InetSocketAddress (targetIpAddr, m_x2cUdpPort));
+  if (socketInfo->m_isIpv4)
+    sourceSocket->SendTo (packet, 0, InetSocketAddress (targetIpAddr, m_x2cUdpPort));
+  else
+    sourceSocket->SendTo (packet, 0, Inet6SocketAddress (targetIpAddr6, m_x2cUdpPort));
 }
 
 
@@ -507,10 +520,15 @@ EpcX2::DoSendHandoverRequestAck (EpcX2SapProvider::HandoverRequestAckParams para
                  "Socket infos not defined for sourceCellId = " << params.sourceCellId);
 
   Ptr<Socket> localSocket = m_x2InterfaceSockets [params.sourceCellId]->m_localCtrlPlaneSocket;
+  bool isIpv4 = m_x2InterfaceSockets [params.sourceCellId]->m_isIpv4;
   Ipv4Address remoteIpAddr = m_x2InterfaceSockets [params.sourceCellId]->m_remoteIpAddr;
+  Ipv6Address remoteIpAddr6 = m_x2InterfaceSockets [params.sourceCellId]->m_remoteIpAddr6;
 
   NS_LOG_LOGIC ("localSocket = " << localSocket);
-  NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr);
+  if (isIpv4)
+    NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr);
+  else
+    NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr6);
 
   NS_LOG_INFO ("Send X2 message: HANDOVER REQUEST ACK");
 
@@ -538,7 +556,10 @@ EpcX2::DoSendHandoverRequestAck (EpcX2SapProvider::HandoverRequestAckParams para
   NS_LOG_INFO ("packetLen = " << packet->GetSize ());
 
   // Send the X2 message through the socket
-  localSocket->SendTo (packet, 0, InetSocketAddress (remoteIpAddr, m_x2cUdpPort));
+  if (isIpv4)
+    localSocket->SendTo (packet, 0, InetSocketAddress (remoteIpAddr, m_x2cUdpPort));
+  else
+    localSocket->SendTo (packet, 0, Inet6SocketAddress (remoteIpAddr6, m_x2cUdpPort));
 }
 
 
@@ -557,10 +578,15 @@ EpcX2::DoSendHandoverPreparationFailure (EpcX2SapProvider::HandoverPreparationFa
                  "Socket infos not defined for sourceCellId = " << params.sourceCellId);
 
   Ptr<Socket> localSocket = m_x2InterfaceSockets [params.sourceCellId]->m_localCtrlPlaneSocket;
+  bool isIpv4 = m_x2InterfaceSockets [params.sourceCellId]->m_isIpv4;
   Ipv4Address remoteIpAddr = m_x2InterfaceSockets [params.sourceCellId]->m_remoteIpAddr;
+  Ipv6Address remoteIpAddr6 = m_x2InterfaceSockets [params.sourceCellId]->m_remoteIpAddr6;
 
   NS_LOG_LOGIC ("localSocket = " << localSocket);
-  NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr);
+  if (isIpv4)
+    NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr);
+  else
+    NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr6);
 
   NS_LOG_INFO ("Send X2 message: HANDOVER PREPARATION FAILURE");
 
@@ -586,7 +612,10 @@ EpcX2::DoSendHandoverPreparationFailure (EpcX2SapProvider::HandoverPreparationFa
   NS_LOG_INFO ("packetLen = " << packet->GetSize ());
 
   // Send the X2 message through the socket
-  localSocket->SendTo (packet, 0, InetSocketAddress (remoteIpAddr, m_x2cUdpPort));
+  if (isIpv4)
+    localSocket->SendTo (packet, 0, InetSocketAddress (remoteIpAddr, m_x2cUdpPort));
+  else
+    localSocket->SendTo (packet, 0, Inet6SocketAddress (remoteIpAddr6, m_x2cUdpPort));
 }
 
 
@@ -605,10 +634,15 @@ EpcX2::DoSendSnStatusTransfer (EpcX2SapProvider::SnStatusTransferParams params)
                  "Socket infos not defined for targetCellId = " << params.targetCellId);
 
   Ptr<Socket> localSocket = m_x2InterfaceSockets [params.targetCellId]->m_localCtrlPlaneSocket;
+  bool isIpv4 = m_x2InterfaceSockets [params.targetCellId]->m_isIpv4;
   Ipv4Address remoteIpAddr = m_x2InterfaceSockets [params.targetCellId]->m_remoteIpAddr;
+  Ipv6Address remoteIpAddr6 = m_x2InterfaceSockets [params.targetCellId]->m_remoteIpAddr6;
 
   NS_LOG_LOGIC ("localSocket = " << localSocket);
-  NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr);
+  if (isIpv4)
+    NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr);
+  else
+    NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr6);
 
   NS_LOG_INFO ("Send X2 message: SN STATUS TRANSFER");
 
@@ -634,7 +668,10 @@ EpcX2::DoSendSnStatusTransfer (EpcX2SapProvider::SnStatusTransferParams params)
   NS_LOG_INFO ("packetLen = " << packet->GetSize ());
 
   // Send the X2 message through the socket
-  localSocket->SendTo (packet, 0, InetSocketAddress (remoteIpAddr, m_x2cUdpPort));
+  if (isIpv4)
+    localSocket->SendTo (packet, 0, InetSocketAddress (remoteIpAddr, m_x2cUdpPort));
+  else
+    localSocket->SendTo (packet, 0, Inet6SocketAddress (remoteIpAddr6, m_x2cUdpPort));
 }
 
 
@@ -651,10 +688,15 @@ EpcX2::DoSendUeContextRelease (EpcX2SapProvider::UeContextReleaseParams params)
                  "Socket infos not defined for sourceCellId = " << params.sourceCellId);
 
   Ptr<Socket> localSocket = m_x2InterfaceSockets [params.sourceCellId]->m_localCtrlPlaneSocket;
+  bool isIpv4 = m_x2InterfaceSockets [params.sourceCellId]->m_isIpv4;
   Ipv4Address remoteIpAddr = m_x2InterfaceSockets [params.sourceCellId]->m_remoteIpAddr;
+  Ipv6Address remoteIpAddr6 = m_x2InterfaceSockets [params.sourceCellId]->m_remoteIpAddr6;
 
   NS_LOG_LOGIC ("localSocket = " << localSocket);
-  NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr);
+  if (isIpv4)
+    NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr);
+  else
+    NS_LOG_LOGIC ("remoteIpAddr = " << remoteIpAddr6);
 
   NS_LOG_INFO ("Send X2 message: UE CONTEXT RELEASE");
 
@@ -679,7 +721,10 @@ EpcX2::DoSendUeContextRelease (EpcX2SapProvider::UeContextReleaseParams params)
   NS_LOG_INFO ("packetLen = " << packet->GetSize ());
 
   // Send the X2 message through the socket
-  localSocket->SendTo (packet, 0, InetSocketAddress (remoteIpAddr, m_x2cUdpPort));
+  if (isIpv4)
+    localSocket->SendTo (packet, 0, InetSocketAddress (remoteIpAddr, m_x2cUdpPort));
+  else
+    localSocket->SendTo (packet, 0, Inet6SocketAddress (remoteIpAddr6, m_x2cUdpPort));
 }
 
 
@@ -695,10 +740,15 @@ EpcX2::DoSendLoadInformation (EpcX2SapProvider::LoadInformationParams params)
                  "Missing infos for targetCellId = " << params.targetCellId);
   Ptr<X2IfaceInfo> socketInfo = m_x2InterfaceSockets [params.targetCellId];
   Ptr<Socket> sourceSocket = socketInfo->m_localCtrlPlaneSocket;
+  bool isIpv4 = socketInfo->m_isIpv4;
   Ipv4Address targetIpAddr = socketInfo->m_remoteIpAddr;
+  Ipv6Address targetIpAddr6 = socketInfo->m_remoteIpAddr6;
 
   NS_LOG_LOGIC ("sourceSocket = " << sourceSocket);
-  NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr);
+  if (isIpv4)
+    NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr);
+  else
+    NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr6);
 
   NS_LOG_INFO ("Send X2 message: LOAD INFORMATION");
 
@@ -722,8 +772,10 @@ EpcX2::DoSendLoadInformation (EpcX2SapProvider::LoadInformationParams params)
   NS_LOG_INFO ("packetLen = " << packet->GetSize ());
 
   // Send the X2 message through the socket
-  sourceSocket->SendTo (packet, 0, InetSocketAddress (targetIpAddr, m_x2cUdpPort));
-
+  if (isIpv4)
+    sourceSocket->SendTo (packet, 0, InetSocketAddress (targetIpAddr, m_x2cUdpPort));
+  else
+    sourceSocket->SendTo (packet, 0, Inet6SocketAddress (targetIpAddr6, m_x2cUdpPort));
 }
 
 
@@ -741,10 +793,15 @@ EpcX2::DoSendResourceStatusUpdate (EpcX2SapProvider::ResourceStatusUpdateParams 
                  "Missing infos for targetCellId = " << params.targetCellId);
   Ptr<X2IfaceInfo> socketInfo = m_x2InterfaceSockets [params.targetCellId];
   Ptr<Socket> sourceSocket = socketInfo->m_localCtrlPlaneSocket;
+  bool isIpv4 = socketInfo->m_isIpv4;
   Ipv4Address targetIpAddr = socketInfo->m_remoteIpAddr;
+  Ipv6Address targetIpAddr6 = socketInfo->m_remoteIpAddr6;
 
   NS_LOG_LOGIC ("sourceSocket = " << sourceSocket);
-  NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr);
+  if (isIpv4)
+    NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr);
+  else
+    NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr6);
 
   NS_LOG_INFO ("Send X2 message: RESOURCE STATUS UPDATE");
 
@@ -770,8 +827,10 @@ EpcX2::DoSendResourceStatusUpdate (EpcX2SapProvider::ResourceStatusUpdateParams 
   NS_LOG_INFO ("packetLen = " << packet->GetSize ());
 
   // Send the X2 message through the socket
-  sourceSocket->SendTo (packet, 0, InetSocketAddress (targetIpAddr, m_x2cUdpPort));
-
+  if (isIpv4)
+    sourceSocket->SendTo (packet, 0, InetSocketAddress (targetIpAddr, m_x2cUdpPort));
+  else
+    sourceSocket->SendTo (packet, 0, Inet6SocketAddress (targetIpAddr6, m_x2cUdpPort));
 }
 
 
@@ -788,10 +847,15 @@ EpcX2::DoSendUeData (EpcX2SapProvider::UeDataParams params)
                  "Missing infos for targetCellId = " << params.targetCellId);
   Ptr<X2IfaceInfo> socketInfo = m_x2InterfaceSockets [params.targetCellId];
   Ptr<Socket> sourceSocket = socketInfo->m_localUserPlaneSocket;
+  bool isIpv4 = socketInfo->m_isIpv4;
   Ipv4Address targetIpAddr = socketInfo->m_remoteIpAddr;
+  Ipv6Address targetIpAddr6 = socketInfo->m_remoteIpAddr6;
 
   NS_LOG_LOGIC ("sourceSocket = " << sourceSocket);
-  NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr);
+  if (isIpv4)
+    NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr);
+  else
+    NS_LOG_LOGIC ("targetIpAddr = " << targetIpAddr6);
 
   GtpuHeader gtpu;
   gtpu.SetTeid (params.gtpTeid);
@@ -802,7 +866,10 @@ EpcX2::DoSendUeData (EpcX2SapProvider::UeDataParams params)
   packet->AddHeader (gtpu);
 
   NS_LOG_INFO ("Forward UE DATA through X2 interface");
-  sourceSocket->SendTo (packet, 0, InetSocketAddress (targetIpAddr, m_x2uUdpPort));
+  if (isIpv4)
+    sourceSocket->SendTo (packet, 0, InetSocketAddress (targetIpAddr, m_x2uUdpPort));
+  else
+    sourceSocket->SendTo (packet, 0, Inet6SocketAddress (targetIpAddr6, m_x2uUdpPort));
 }
 
 } // namespace ns3

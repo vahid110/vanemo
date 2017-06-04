@@ -104,6 +104,18 @@ public:
    */
   void SetBase (Ipv6Address network, Ipv6Prefix prefix,
                 Ipv6Address base = Ipv6Address ("::1"));
+  /**
+	 * \brief Allocate a new network.
+	 *
+	 * This method will reset the network for future
+	 * network IDs, and resets the interface ID to the previously used
+	 * base.
+	 *
+	 * \param network The IPv6 network
+	 * \param prefix The prefix
+	 * \deprecated
+	 */
+	void NewNetwork (Ipv6Address network, Ipv6Prefix prefix) NS_DEPRECATED;
 
   /**
    * \brief Allocate a new network.
@@ -165,6 +177,12 @@ public:
    * \return newly created Ipv6InterfaceContainer
    */
   Ipv6InterfaceContainer AssignWithoutAddress (const NetDeviceContainer &c);
+
+private:
+  Ipv6Address m_network;  //!< network address
+  Ipv6Prefix m_prefix;    //!< prefix
+  Ipv6Address m_address;  //!< host part of the address to be assigned
+  Ipv6Address m_base;     //!< base address
 
 };
 

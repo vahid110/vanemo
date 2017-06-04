@@ -82,6 +82,11 @@ public:
 private:
 
   void Initialize (Mac48Address tunDevMacAddress);
+
+  virtual Ipv4InterfaceContainer AssignUeIpv4Address (NetDeviceContainer ueDevices) ;
+
+
+  virtual Ipv4Address GetUeDefaultGatewayAddress () ;
   /**
    * SGW network element
    */

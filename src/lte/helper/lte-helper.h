@@ -313,7 +313,7 @@ public:
    *
    * Note that this function can only be used in EPC-enabled simulation.
    */
-  void Attach (NetDeviceContainer ueDevices);
+  void Attach (NetDeviceContainer ueDevices, bool isIpv4 = true);
 
   /**
    * \brief Enables automatic attachment of a UE device to a suitable cell
@@ -332,7 +332,7 @@ public:
    *
    * Note that this function can only be used in EPC-enabled simulation.
    */
-  void Attach (Ptr<NetDevice> ueDevice);
+  void Attach (Ptr<NetDevice> ueDevice, bool isIpv4 = true);
 
   /**
    * \brief Manual attachment of a set of UE devices to the network via a given
@@ -347,7 +347,7 @@ public:
    * Note that this function will disable Idle mode initial cell selection
    * procedure.
    */
-  void Attach (NetDeviceContainer ueDevices, Ptr<NetDevice> enbDevice);
+  void Attach (NetDeviceContainer ueDevices, Ptr<NetDevice> enbDevice, bool isIpv4 = true);
 
   /**
    * \brief Manual attachment of a UE device to the network via a given eNodeB.
@@ -361,7 +361,7 @@ public:
    * Note that this function will disable Idle mode initial cell selection
    * procedure.
    */
-  void Attach (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enbDevice);
+  void Attach (Ptr<NetDevice> ueDevice, Ptr<NetDevice> enbDevice, bool isIpv4 = true);
 
   /** 
    * \brief Manual attachment of a set of UE devices to the network via the
@@ -377,7 +377,7 @@ public:
    * 
    * \sa LteHelper::Attach(NetDeviceContainer ueDevices);
    */
-  void AttachToClosestEnb (NetDeviceContainer ueDevices, NetDeviceContainer enbDevices);
+  void AttachToClosestEnb (NetDeviceContainer ueDevices, NetDeviceContainer enbDevices, bool isIpv4 = true);
 
   /** 
    * \brief Manual attachment of a UE device to the network via the closest
@@ -393,7 +393,7 @@ public:
    *
    * \sa LteHelper::Attach(Ptr<NetDevice> ueDevice);
    */
-  void AttachToClosestEnb (Ptr<NetDevice> ueDevice, NetDeviceContainer enbDevices);
+  void AttachToClosestEnb (Ptr<NetDevice> ueDevice, NetDeviceContainer enbDevices, bool isIpv4 = true);
 
   /**
    * Activate a dedicated EPS bearer on a given set of UE devices.
@@ -574,6 +574,11 @@ public:
    */
   Ptr<RadioBearerStatsCalculator> GetPdcpStats (void);
 
+  enum LteEpsBearerToRlcMapping_t {RLC_SM_ALWAYS = 1,
+                                   RLC_UM_ALWAYS = 2,
+                                   RLC_AM_ALWAYS = 3,
+                                   PER_BASED = 4};
+
   /**
    * Assign a fixed random variable stream number to the random variables used.
    *
@@ -653,6 +658,7 @@ private:
   ObjectFactory m_ffrAlgorithmFactory;
   /// Factory of handover algorithm object.
   ObjectFactory m_handoverAlgorithmFactory;
+  ObjectFactory m_propagationModelFactory;
   /// Factory of LteEnbNetDevice objects.
   ObjectFactory m_enbNetDeviceFactory;
   /// Factory of antenna object for eNodeB.

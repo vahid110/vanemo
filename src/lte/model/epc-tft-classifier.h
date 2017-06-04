@@ -65,7 +65,7 @@ public:
   /** 
    * classify an IP packet
    * 
-   * \param p the IP packet. It is assumed that the outmost header is an IPv4 header.
+   * \param p the IP packet. The outmost header can either be IPv4 or IPv6.
    * 
    * \return the identifier (>0) of the first TFT that matches with the IP packet; 0 if no TFT matched.
    */

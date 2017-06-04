@@ -24,6 +24,8 @@
 #include <ns3/log.h>
 #include <ns3/node.h>
 #include <ns3/ipv4-address.h>
+#include "ns3/pcap-file-wrapper.h"
+#include "ns3/lte-net-device.h"
 
 namespace ns3 {
 
@@ -58,17 +60,40 @@ EpcHelper::DoDispose ()
   Object::DoDispose ();
 }
 
-
-Ipv4InterfaceContainer EpcHelper::AssignUeIpv4Address (NetDeviceContainer ueDevices)
+void
+EpcHelper::EnablePcapInternal (std::string prefix, Ptr<NetDevice> nd, bool promiscuous, bool explicitFilename)
 {
-	return Ipv4InterfaceContainer();
+  //
+  // All of the Pcap enable functions vector through here including the ones
+  // that are wandering through all of devices on perhaps all of the nodes in
+  // the system.  We can only deal with devices of type LteNetDevice.
+  //
+  Ptr<LteNetDevice> device = nd->GetObject<LteNetDevice> ();
+  if (device == 0)
+    {
+      NS_LOG_INFO ("EpcHelper::EnablePcapInternal(): Device " << device << " not of type ns3::LteNetDevice");
+      return;
+    }
+
+  PcapHelper pcapHelper;
+
+  std::string filename;
+  if (explicitFilename)
+    {
+      filename = prefix;
+    }
+  else
+    {
+      filename = pcapHelper.GetFilenameFromDevice (prefix, device);
+    }
+
+  Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, PcapHelper::DLT_PPP);
+  pcapHelper.HookDefaultSink<LteNetDevice> (device, "Sniffer", file);
 }
 
-Ipv4Address EpcHelper::GetUeDefaultGatewayAddress ()
+Ipv6Address EpcHelper::GetUeDefaultGatewayAddress6 ()
 {
-	return Ipv4Address();
+	return Ipv6Address();
 }
-
-
 
 } // namespace ns3

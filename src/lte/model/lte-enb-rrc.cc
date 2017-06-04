@@ -123,7 +123,8 @@ static const std::string & ToString (UeManager::State s)
 }
 
 
-NS_OBJECT_ENSURE_REGISTERED (UeManager);
+NS_OBJECT_ENSURE_REGISTERED (UeManager)
+  ;
 
 
 UeManager::UeManager ()
@@ -341,6 +342,7 @@ UeManager::SetupDataRadioBearer (EpsBearer bearer, uint8_t bearerId, uint32_t gt
   drbInfo->m_drbIdentity = drbid;
   drbInfo->m_logicalChannelIdentity = lcid;
   drbInfo->m_gtpTeid = gtpTeid;
+  drbInfo->m_isIpv4 = true;
   drbInfo->m_transportLayerAddress = transportLayerAddress;
 
   if (m_state == HANDOVER_JOINING)
@@ -350,7 +352,97 @@ UeManager::SetupDataRadioBearer (EpsBearer bearer, uint8_t bearerId, uint32_t gt
       x2uTeidInfo.rnti = m_rnti;
       x2uTeidInfo.drbid = drbid;
       std::pair<std::map<uint32_t, LteEnbRrc::X2uTeidInfo>::iterator, bool>
-      ret = m_rrc->m_x2uTeidInfoMap.insert (std::pair<uint32_t, LteEnbRrc::X2uTeidInfo> (gtpTeid, x2uTeidInfo));
+        ret = m_rrc->m_x2uTeidInfoMap.insert (std::pair<uint32_t, LteEnbRrc::X2uTeidInfo> (gtpTeid, x2uTeidInfo));
+      NS_ASSERT_MSG (ret.second == true, "overwriting a pre-existing entry in m_x2uTeidInfoMap");
+    }
+
+  TypeId rlcTypeId = m_rrc->GetRlcType (bearer);
+
+  ObjectFactory rlcObjectFactory;
+  rlcObjectFactory.SetTypeId (rlcTypeId);
+  Ptr<LteRlc> rlc = rlcObjectFactory.Create ()->GetObject<LteRlc> ();
+  rlc->SetLteMacSapProvider (m_rrc->m_macSapProvider);
+  rlc->SetRnti (m_rnti);
+
+  drbInfo->m_rlc = rlc;
+
+  rlc->SetLcId (lcid);
+
+  // we need PDCP only for real RLC, i.e., RLC/UM or RLC/AM
+  // if we are using RLC/SM we don't care of anything above RLC
+  if (rlcTypeId != LteRlcSm::GetTypeId ())
+    {
+      Ptr<LtePdcp> pdcp = CreateObject<LtePdcp> ();
+      pdcp->SetRnti (m_rnti);
+      pdcp->SetLcId (lcid);
+      pdcp->SetLtePdcpSapUser (m_drbPdcpSapUser);
+      pdcp->SetLteRlcSapProvider (rlc->GetLteRlcSapProvider ());
+      rlc->SetLteRlcSapUser (pdcp->GetLteRlcSapUser ());
+      drbInfo->m_pdcp = pdcp;
+    }
+    
+  LteEnbCmacSapProvider::LcInfo lcinfo;
+  lcinfo.rnti = m_rnti;
+  lcinfo.lcId = lcid;
+  lcinfo.lcGroup = m_rrc->GetLogicalChannelGroup (bearer);
+  lcinfo.qci = bearer.qci;
+  lcinfo.isGbr = bearer.IsGbr ();
+  lcinfo.mbrUl = bearer.gbrQosInfo.mbrUl;
+  lcinfo.mbrDl = bearer.gbrQosInfo.mbrDl;
+  lcinfo.gbrUl = bearer.gbrQosInfo.gbrUl;
+  lcinfo.gbrDl = bearer.gbrQosInfo.gbrDl;
+  m_rrc->m_cmacSapProvider->AddLc (lcinfo, rlc->GetLteMacSapUser ());
+  
+  if (rlcTypeId == LteRlcAm::GetTypeId ())
+    {
+      drbInfo->m_rlcConfig.choice =  LteRrcSap::RlcConfig::AM;
+    }
+  else
+    {
+      drbInfo->m_rlcConfig.choice =  LteRrcSap::RlcConfig::UM_BI_DIRECTIONAL;
+    }
+
+  drbInfo->m_logicalChannelIdentity = lcid;
+  drbInfo->m_logicalChannelConfig.priority =  m_rrc->GetLogicalChannelPriority (bearer);
+  drbInfo->m_logicalChannelConfig.logicalChannelGroup = m_rrc->GetLogicalChannelGroup (bearer);
+  if (bearer.IsGbr ())
+    {
+      drbInfo->m_logicalChannelConfig.prioritizedBitRateKbps = bearer.gbrQosInfo.gbrUl;      
+    }
+  else
+    {
+      drbInfo->m_logicalChannelConfig.prioritizedBitRateKbps = 0;
+    }
+  drbInfo->m_logicalChannelConfig.bucketSizeDurationMs = 1000;
+
+  ScheduleRrcConnectionReconfiguration ();
+}
+
+void
+UeManager::SetupDataRadioBearer (EpsBearer bearer, uint8_t bearerId, uint32_t gtpTeid, Ipv6Address transportLayerAddress6)
+{
+  NS_LOG_FUNCTION (this << (uint32_t) m_rnti);
+
+  Ptr<LteDataRadioBearerInfo> drbInfo = CreateObject<LteDataRadioBearerInfo> ();
+  uint8_t drbid = AddDataRadioBearerInfo (drbInfo);
+  uint8_t lcid = Drbid2Lcid (drbid);
+  uint8_t bid = Drbid2Bid (drbid);
+  NS_ASSERT_MSG ( bearerId == 0 || bid == bearerId, "bearer ID mismatch (" << (uint32_t) bid << " != " << (uint32_t) bearerId << ", the assumption that ID are allocated in the same way by MME and RRC is not valid any more");
+  drbInfo->m_epsBearerIdentity = bid;
+  drbInfo->m_drbIdentity = drbid;
+  drbInfo->m_logicalChannelIdentity = lcid;
+  drbInfo->m_gtpTeid = gtpTeid;
+  drbInfo->m_isIpv4 = false;
+  drbInfo->m_transportLayerAddress6 = transportLayerAddress6;
+
+  if (m_state == HANDOVER_JOINING)
+    {
+      // setup TEIDs for receiving data eventually forwarded over X2-U
+      LteEnbRrc::X2uTeidInfo x2uTeidInfo;
+      x2uTeidInfo.rnti = m_rnti;
+      x2uTeidInfo.drbid = drbid;
+      std::pair<std::map<uint32_t, LteEnbRrc::X2uTeidInfo>::iterator, bool>
+        ret = m_rrc->m_x2uTeidInfoMap.insert (std::pair<uint32_t, LteEnbRrc::X2uTeidInfo> (gtpTeid, x2uTeidInfo));
       NS_ASSERT_MSG (ret.second == true, "overwriting a pre-existing entry in m_x2uTeidInfoMap");
     }
 
@@ -710,7 +802,9 @@ UeManager::GetErabList ()
       etbsi.erabId = it->second->m_epsBearerIdentity;
       etbsi.erabLevelQosParameters = it->second->m_epsBearer;
       etbsi.dlForwarding = false;
+      etbsi.isIpv4 = it->second->m_isIpv4;
       etbsi.transportLayerAddress = it->second->m_transportLayerAddress;
+      etbsi.transportLayerAddress6 = it->second->m_transportLayerAddress6;
       etbsi.gtpTeid = it->second->m_gtpTeid;
       ret.push_back (etbsi);
     }
@@ -1287,7 +1381,8 @@ UeManager::SwitchToState (State newState)
 // eNB RRC methods
 ///////////////////////////////////////////
 
-NS_OBJECT_ENSURE_REGISTERED (LteEnbRrc);
+NS_OBJECT_ENSURE_REGISTERED (LteEnbRrc)
+  ;
 
 LteEnbRrc::LteEnbRrc ()
   : m_x2SapProvider (0),
@@ -1924,7 +2019,10 @@ void
 LteEnbRrc::DoDataRadioBearerSetupRequest (EpcEnbS1SapUser::DataRadioBearerSetupRequestParameters request)
 {
   Ptr<UeManager> ueManager = GetUeManager (request.rnti);
-  ueManager->SetupDataRadioBearer (request.bearer, request.bearerId, request.gtpTeid, request.transportLayerAddress);
+  if (request.isIpv4)
+    ueManager->SetupDataRadioBearer (request.bearer, request.bearerId, request.gtpTeid, request.transportLayerAddress);
+  else
+    ueManager->SetupDataRadioBearer (request.bearer, request.bearerId, request.gtpTeid, request.transportLayerAddress6);
 }
 
 void 
@@ -1985,7 +2083,10 @@ LteEnbRrc::DoRecvHandoverRequest (EpcX2SapUser::HandoverRequestParams req)
        it != req.bearers.end ();
        ++it)
     {
-      ueManager->SetupDataRadioBearer (it->erabLevelQosParameters, it->erabId, it->gtpTeid, it->transportLayerAddress);
+      if (it->isIpv4)
+        ueManager->SetupDataRadioBearer (it->erabLevelQosParameters, it->erabId, it->gtpTeid, it->transportLayerAddress);
+      else
+        ueManager->SetupDataRadioBearer (it->erabLevelQosParameters, it->erabId, it->gtpTeid, it->transportLayerAddress6);
       EpcX2Sap::ErabAdmittedItem i;
       i.erabId = it->erabId;
       ackParams.admittedBearers.push_back (i);

@@ -80,7 +80,9 @@ EpcEnbApplication::DoDispose (void)
 EpcEnbApplication::EpcEnbApplication (Ptr<Socket> lteSocket, Ptr<Socket> s1uSocket, Ipv4Address enbS1uAddress, Ipv4Address sgwS1uAddress, uint16_t cellId)
   : m_lteSocket (lteSocket),
     m_s1uSocket (s1uSocket),    
+    m_isIpv4EnbS1uAddress (true),
     m_enbS1uAddress (enbS1uAddress),
+    m_isIpv4SgwS1uAddress (true),
     m_sgwS1uAddress (sgwS1uAddress),
     m_gtpuUdpPort (2152), // fixed by the standard
     m_s1SapUser (0),
@@ -184,7 +186,9 @@ EpcEnbApplication::DoPathSwitchRequest (EpcEnbS1SapProvider::PathSwitchRequestPa
 
       EpcS1apSapMme::ErabSwitchedInDownlinkItem erab;
       erab.erabId = bit->epsBearerId;
+      erab.isIpv4 = m_isIpv4EnbS1uAddress;
       erab.enbTransportLayerAddress = m_enbS1uAddress;
+      erab.enbTransportLayerAddress6 = m_enbS1uAddress6;
       erab.enbTeid = bit->teid;
 
       erabToBeSwitchedInDownlinkList.push_back (erab);
@@ -231,6 +235,9 @@ EpcEnbApplication::DoInitialContextSetupRequest (uint64_t mmeUeS1Id, uint16_t en
       params.bearer = erabIt->erabLevelQosParameters;
       params.bearerId = erabIt->erabId;
       params.gtpTeid = erabIt->sgwTeid;
+      params.isIpv4 = erabIt->isIpv4;
+      params.transportLayerAddress = erabIt->transportLayerAddress;
+      params.transportLayerAddress6 = erabIt->transportLayerAddress6;
       m_s1SapUser->DataRadioBearerSetupRequest (params);
 
       EpsFlowId_t rbid (rnti, erabIt->erabId);
@@ -329,7 +336,10 @@ EpcEnbApplication::SendToS1uSocket (Ptr<Packet> packet, uint32_t teid)
   gtpu.SetLength (packet->GetSize () + gtpu.GetSerializedSize () - 8);  
   packet->AddHeader (gtpu);
   uint32_t flags = 0;
-  m_s1uSocket->SendTo (packet, flags, InetSocketAddress (m_sgwS1uAddress, m_gtpuUdpPort));
+  if (m_isIpv4SgwS1uAddress)
+    m_s1uSocket->SendTo (packet, flags, InetSocketAddress(m_sgwS1uAddress, m_gtpuUdpPort));
+  else
+    m_s1uSocket->SendTo (packet, flags, Inet6SocketAddress(m_sgwS1uAddress6, m_gtpuUdpPort));
 }
 
 void

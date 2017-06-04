@@ -44,12 +44,11 @@ public:
   X2IfaceInfo& operator= (const X2IfaceInfo &);
 
 public:
-	bool          m_isIpv4;
-	Ipv4Address   m_remoteIpAddr;
-	Ipv6Address   m_remoteIpAddr6;
-	Ptr<Socket>   m_localCtrlPlaneSocket;
-	Ptr<Socket>   m_localUserPlaneSocket;
-
+  bool          m_isIpv4;
+  Ipv4Address   m_remoteIpAddr;
+  Ipv6Address   m_remoteIpAddr6;
+  Ptr<Socket>   m_localCtrlPlaneSocket;
+  Ptr<Socket>   m_localUserPlaneSocket;
 };
 
 
