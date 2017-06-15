@@ -113,13 +113,16 @@ Ipv6InterfaceContainer AssignWithoutAddress(Ptr<NetDevice> device)
 }
 
 
-static void udpRx (std::string context, Ptr<const Packet> packet, const Address &address) {
-  SeqTsHeader seqTs;
-  packet->Copy ()->RemoveHeader (seqTs);
-  NS_LOG_UNCOND (context << "  " << seqTs.GetTs () << " ---> " << Simulator::Now() << ": " << seqTs.GetSeq());
-}
+//static void udpRx (std::string context, Ptr<const Packet> packet, const Address &address) {
+//  SeqTsHeader seqTs;
+//  packet->Copy ()->RemoveHeader (seqTs);
+//  NS_LOG_UNCOND (context << "  " << seqTs.GetTs () << " ---> " << Simulator::Now() << ": " << seqTs.GetSeq());
+//}
+
 int main (int argc, char *argv[])
 {
+  LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
+  LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 
   NodeContainer sta;
   NodeContainer grp;
@@ -377,9 +380,12 @@ int main (int argc, char *argv[])
   uint16_t port = 6000;
   ApplicationContainer serverApps, clientApps;
   NS_LOG_INFO ("Installing UDP server on MN");
-  PacketSinkHelper sink ("ns3::UdpSocketFactory",
-                           Inet6SocketAddress (Ipv6Address::GetAny (), port));
-  serverApps = sink.Install (sta.Get (0));
+//  PacketSinkHelper sink ("ns3::UdpSocketFactory",
+//                           Inet6SocketAddress (Ipv6Address::GetAny (), port));
+//  serverApps = sink.Install (sta.Get (0));
+
+  UdpServerHelper server (port);
+  serverApps = server.Install (sta.Get(0));
 
   NS_LOG_INFO ("Installing UDP client on CN");
   uint32_t packetSize = 1024;
@@ -390,7 +396,7 @@ int main (int argc, char *argv[])
   udpClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
   udpClient.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
   clientApps = udpClient.Install (cn.Get (0));
-  Config::Connect ("/NodeList/*/ApplicationList/*/$ns3::PacketSink/Rx", MakeCallback(&udpRx));
+//  Config::Connect ("/NodeList/*/ApplicationList/*/$ns3::PacketSink/Rx", MakeCallback(&udpRx));
 
   AnimationInterface anim("PMIPv6.xml");
   anim.SetMobilityPollInterval(Seconds(1));
