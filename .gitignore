@@ -1,5 +1,8 @@
 .*
 !.gitignore
+*pcap
+*xml
+*tr
 AUTHORS
 bindings/
 build/

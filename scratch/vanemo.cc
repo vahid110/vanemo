@@ -68,6 +68,23 @@ Ipv6InterfaceContainer AssignIpv6Address(Ptr<NetDevice> device, Ipv6Address addr
   return retval;
 }
 
+Ipv6InterfaceContainer AssignIpv6Address(NetDeviceContainer devices, Ipv6Address network = Ipv6Address("2001:1::"), Ipv6Prefix prefix = Ipv6Prefix (64))
+{
+  NS_LOG_UNCOND ("Create networks and assign IPv6 Addresses.");
+  Ipv6AddressHelper ipv6;
+  ipv6.SetBase (network, prefix);
+  Ipv6InterfaceContainer i = ipv6.Assign (devices);
+
+  for (Ipv6InterfaceContainer::Iterator it = i.Begin(); it != i.End(); it++)
+  {
+	  NS_LOG_UNCOND (it->first->GetAddress(it->second, 1));
+  }
+
+//  i.SetForwarding (1, true);
+//  i.SetDefaultRouteInAllNodes (1);
+  return i;
+}
+
 Ipv6InterfaceContainer AssignWithoutAddress(Ptr<NetDevice> device)
 {
   Ipv6InterfaceContainer retval;
@@ -99,12 +116,13 @@ Ipv6InterfaceContainer AssignWithoutAddress(Ptr<NetDevice> device)
 static void udpRx (std::string context, Ptr<const Packet> packet, const Address &address) {
   SeqTsHeader seqTs;
   packet->Copy ()->RemoveHeader (seqTs);
-  NS_LOG_UNCOND (seqTs.GetTs () << " ---> " << Simulator::Now() << ": " << seqTs.GetSeq());
+  NS_LOG_UNCOND (context << "  " << seqTs.GetTs () << " ---> " << Simulator::Now() << ": " << seqTs.GetSeq());
 }
 int main (int argc, char *argv[])
 {
 
   NodeContainer sta;
+  NodeContainer grp;
   NodeContainer cn;
   NodeContainer backbone;
   NodeContainer aps;
@@ -125,18 +143,19 @@ int main (int argc, char *argv[])
   NetDeviceContainer mag1BrDev;
   NetDeviceContainer mag2BrDev;
   NetDeviceContainer staDevs;
+  NetDeviceContainer grpDevs;
   
   Ipv6InterfaceContainer backboneIfs;
   Ipv6InterfaceContainer outerIfs;
   Ipv6InterfaceContainer mag1Ifs;
   Ipv6InterfaceContainer mag2Ifs;
   Ipv6InterfaceContainer staIfs;
+  Ipv6InterfaceContainer grpIfs;
   
   CommandLine cmd;
   cmd.Parse (argc, argv);
   
   SeedManager::SetSeed (123456);
-
 //  LogLevel logAll = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_ALL);
 //  LogLevel logLogic = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_LOGIC);
 //  LogLevel logInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO);
@@ -149,12 +168,14 @@ int main (int argc, char *argv[])
   aps.Create(2);
   cn.Create(1);
   sta.Create(1);
+  grp.Create(2);
 
   InternetStackHelper internet;
   internet.Install (backbone);
   internet.Install (aps);
   internet.Install (cn);
   internet.Install (sta);
+  internet.Install (grp);
 
   lma.Add(backbone.Get(0));
   
@@ -301,14 +322,35 @@ int main (int argc, char *argv[])
 	               "ActiveProbing", BooleanValue (false));
   staDevs.Add( wifi.Install (wifiPhy, wifiMac, sta));
 
-  iifc = AssignWithoutAddress(staDevs.Get(0)); 
-  staIfs.Add(iifc);
+//  iifc = AssignWithoutAddress(staDevs.Get(0));
+//  staIfs.Add(iifc);
   
+  positionAlloc = CreateObject<ListPositionAllocator> ();
+  positionAlloc->Add (Vector (-10.0, 00.0, 0.0)); //STA
+  positionAlloc->Add (Vector (-20.0, 00.0, 0.0)); //STA
+  mobility.SetPositionAllocator (positionAlloc);
+  mobility.PushReferenceMobilityModel(sta.Get (0));
+  mobility.Install(grp);
+
+  //WLAN interface
+  wifiMac.SetType ("ns3::StaWifiMac",
+	               "Ssid", SsidValue (ssid),
+	               "ActiveProbing", BooleanValue (false));
+  grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
+
+  NetDeviceContainer mnnDevs(staDevs, grpDevs);
+  iifc = AssignIpv6Address(mnnDevs);
+  grpIfs.Add(iifc);
+
+
+
   //attach PMIPv6 agents
   Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
 
   //adding profile for each station  
-  profile->AddProfile(Identifier("pmip1@example.com"), Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
 
   Pmipv6LmaHelper lmahelper;
   lmahelper.SetPrefixPoolBase(Ipv6Address("3ffe:1:4::"), 48);
@@ -326,7 +368,7 @@ int main (int argc, char *argv[])
   
   AsciiTraceHelper ascii;
   csma.EnableAsciiAll (ascii.CreateFileStream ("pmip6-wifi.tr"));
-  csma.EnablePcapAll (std::string ("pmip6-wifi"), false);
+  csma.EnablePcapAll (std::string ("pmip6-csma"), false);
   
   wifiPhy.EnablePcap ("pmip6-wifi", mag1ApDev.Get(0));
   wifiPhy.EnablePcap ("pmip6-wifi", mag2ApDev.Get(0));
@@ -352,6 +394,14 @@ int main (int argc, char *argv[])
 
   AnimationInterface anim("PMIPv6.xml");
   anim.SetMobilityPollInterval(Seconds(1));
+  anim.UpdateNodeDescription(lma.Get(0), "LMA");
+  anim.UpdateNodeDescription(sta.Get(0), "MNN");
+  anim.UpdateNodeDescription(grp.Get(0), "MNN1");
+  anim.UpdateNodeDescription(grp.Get(1), "MNN2");
+  anim.UpdateNodeDescription(aps.Get(0), "AP1");
+  anim.UpdateNodeDescription(aps.Get(1), "AP2");
+  anim.UpdateNodeDescription(backbone.Get(0), "MAG1");
+  anim.UpdateNodeDescription(backbone.Get(1), "MAG2");
 
   serverApps.Start (Seconds (1.0));
   clientApps.Start (Seconds (1.5));
