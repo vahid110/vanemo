@@ -23,6 +23,7 @@
 #include "ns3/wifi-module.h"
 #include "ns3/csma-module.h"
 #include "ns3/bridge-module.h"
+#include "ns3/propagation-loss-model.h"
 
 #include "ns3/ipv6-static-routing.h"
 #include "ns3/ipv6-static-source-routing.h"
@@ -276,7 +277,9 @@ int main (int argc, char *argv[])
   WifiHelper wifi = WifiHelper::Default ();
   NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
   YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
-  wifiPhy.SetChannel (wifiChannel.Create ());
+//  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (200));
+  Ptr<YansWifiChannel> channel = wifiChannel.Create ();
+  wifiPhy.SetChannel (channel);
    
   wifiMac.SetType ("ns3::ApWifiMac",
 		           "Ssid", SsidValue (ssid),
@@ -318,16 +321,27 @@ int main (int argc, char *argv[])
   
   Ptr<ConstantVelocityMobilityModel> cvm = sta.Get(0)->GetObject<ConstantVelocityMobilityModel>();
   cvm->SetVelocity(Vector (10.0, 0, 0)); //move to left to right 10.0m/s
-
   //WLAN interface
   wifiMac.SetType ("ns3::StaWifiMac",
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
+
+
+//  YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
+//  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (200));
+//  ObjectFactory factory;
+//  factory.SetTypeId ("ns3::RangePropagationLossModel");
+//  factory.Set ("MaxRange", DoubleValue (200));
+//  Ptr<PropagationLossModel> cur = factory.Create<RangePropagationLossModel> ();
+//  channel->SetPropagationLossModel(cur);
+//  wifiPhy.SetChannel (channel);
+//  channel = wifiChannel.Create ();
+//  wifiPhy.SetChannel (channel);
   staDevs.Add( wifi.Install (wifiPhy, wifiMac, sta));
 
 //  iifc = AssignWithoutAddress(staDevs.Get(0));
 //  staIfs.Add(iifc);
-  
+
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (-10.0, 00.0, 0.0)); //STA
   positionAlloc->Add (Vector (-20.0, 00.0, 0.0)); //STA
