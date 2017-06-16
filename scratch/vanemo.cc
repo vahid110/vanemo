@@ -126,7 +126,7 @@ int main (int argc, char *argv[])
   LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 
   NodeContainer sta;
-  NodeContainer grp;
+//  NodeContainer grp;
   NodeContainer cn;
   NodeContainer backbone;
   NodeContainer aps;
@@ -172,14 +172,14 @@ int main (int argc, char *argv[])
   aps.Create(2);
   cn.Create(1);
   sta.Create(1);
-  grp.Create(2);
+//  grp.Create(2);
 
   InternetStackHelper internet;
   internet.Install (backbone);
   internet.Install (aps);
   internet.Install (cn);
   internet.Install (sta);
-  internet.Install (grp);
+//  internet.Install (grp);
 
   lma.Add(backbone.Get(0));
   
@@ -277,9 +277,8 @@ int main (int argc, char *argv[])
   WifiHelper wifi = WifiHelper::Default ();
   NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
   YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
-//  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (200));
-  Ptr<YansWifiChannel> channel = wifiChannel.Create ();
-  wifiPhy.SetChannel (channel);
+  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (200));
+  wifiPhy.SetChannel (wifiChannel.Create ());
    
   wifiMac.SetType ("ns3::ApWifiMac",
 		           "Ssid", SsidValue (ssid),
@@ -326,36 +325,22 @@ int main (int argc, char *argv[])
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
 
-
-//  YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
-//  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (200));
-//  ObjectFactory factory;
-//  factory.SetTypeId ("ns3::RangePropagationLossModel");
-//  factory.Set ("MaxRange", DoubleValue (200));
-//  Ptr<PropagationLossModel> cur = factory.Create<RangePropagationLossModel> ();
-//  channel->SetPropagationLossModel(cur);
-//  wifiPhy.SetChannel (channel);
-//  channel = wifiChannel.Create ();
-//  wifiPhy.SetChannel (channel);
   staDevs.Add( wifi.Install (wifiPhy, wifiMac, sta));
-
-//  iifc = AssignWithoutAddress(staDevs.Get(0));
-//  staIfs.Add(iifc);
 
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (-10.0, 00.0, 0.0)); //STA
   positionAlloc->Add (Vector (-20.0, 00.0, 0.0)); //STA
   mobility.SetPositionAllocator (positionAlloc);
   mobility.PushReferenceMobilityModel(sta.Get (0));
-  mobility.Install(grp);
+//  mobility.Install(grp);
 
   //WLAN interface
   wifiMac.SetType ("ns3::StaWifiMac",
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
-  grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
+//  grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
 
-  NetDeviceContainer mnnDevs(staDevs, grpDevs);
+  NetDeviceContainer mnnDevs(staDevs/*, grpDevs*/);
   iifc = AssignIpv6Address(mnnDevs);
   grpIfs.Add(iifc);
 
@@ -366,8 +351,8 @@ int main (int argc, char *argv[])
 
   //adding profile for each station  
   profile->AddProfile(Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
-  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
-  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+//  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+//  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
 
   Pmipv6LmaHelper lmahelper;
   lmahelper.SetPrefixPoolBase(Ipv6Address("3ffe:1:4::"), 48);
@@ -394,9 +379,6 @@ int main (int argc, char *argv[])
   uint16_t port = 6000;
   ApplicationContainer serverApps, clientApps;
   NS_LOG_INFO ("Installing UDP server on MN");
-//  PacketSinkHelper sink ("ns3::UdpSocketFactory",
-//                           Inet6SocketAddress (Ipv6Address::GetAny (), port));
-//  serverApps = sink.Install (sta.Get (0));
 
   UdpServerHelper server (port);
   serverApps = server.Install (sta.Get(0));
@@ -410,14 +392,14 @@ int main (int argc, char *argv[])
   udpClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
   udpClient.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
   clientApps = udpClient.Install (cn.Get (0));
-//  Config::Connect ("/NodeList/*/ApplicationList/*/$ns3::PacketSink/Rx", MakeCallback(&udpRx));
 
   AnimationInterface anim("PMIPv6.xml");
   anim.SetMobilityPollInterval(Seconds(1));
   anim.UpdateNodeDescription(lma.Get(0), "LMA");
+  anim.UpdateNodeDescription(cn.Get(0), "CN");
   anim.UpdateNodeDescription(sta.Get(0), "MNN");
-  anim.UpdateNodeDescription(grp.Get(0), "MNN1");
-  anim.UpdateNodeDescription(grp.Get(1), "MNN2");
+//  anim.UpdateNodeDescription(grp.Get(0), "MNN1");
+//  anim.UpdateNodeDescription(grp.Get(1), "MNN2");
   anim.UpdateNodeDescription(aps.Get(0), "AP1");
   anim.UpdateNodeDescription(aps.Get(1), "AP2");
   anim.UpdateNodeDescription(backbone.Get(0), "MAG1");
