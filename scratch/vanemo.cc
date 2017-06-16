@@ -52,6 +52,7 @@ Ipv6InterfaceContainer AssignIpv6Address(Ptr<NetDevice> device, Ipv6Address addr
   int32_t ifIndex = 0;
 
   ifIndex = ipv6->GetInterfaceForDevice (device);
+
   if (ifIndex == -1)
     {
       ifIndex = ipv6->AddInterface (device);
@@ -63,15 +64,15 @@ Ipv6InterfaceContainer AssignIpv6Address(Ptr<NetDevice> device, Ipv6Address addr
   ipv6->SetMetric (ifIndex, 1);
   ipv6->SetUp (ifIndex);
   ipv6->AddAddress (ifIndex, ipv6Addr);
+  NS_LOG_UNCOND (ipv6Addr);
 
   retval.Add (ipv6, ifIndex);
 
   return retval;
 }
 
-Ipv6InterfaceContainer AssignIpv6Address(NetDeviceContainer devices, Ipv6Address network = Ipv6Address("2001:1::"), Ipv6Prefix prefix = Ipv6Prefix (64))
+Ipv6InterfaceContainer AssignIpv6Address(NetDeviceContainer devices, Ipv6Address network = Ipv6Address(/*"2001:1::"*/"3ffe:1:4:1::"), Ipv6Prefix prefix = Ipv6Prefix (64))
 {
-  NS_LOG_UNCOND ("Create networks and assign IPv6 Addresses.");
   Ipv6AddressHelper ipv6;
   ipv6.SetBase (network, prefix);
   Ipv6InterfaceContainer i = ipv6.Assign (devices);
@@ -80,9 +81,6 @@ Ipv6InterfaceContainer AssignIpv6Address(NetDeviceContainer devices, Ipv6Address
   {
 	  NS_LOG_UNCOND (it->first->GetAddress(it->second, 1));
   }
-
-//  i.SetForwarding (1, true);
-//  i.SetDefaultRouteInAllNodes (1);
   return i;
 }
 
@@ -124,6 +122,10 @@ int main (int argc, char *argv[])
 {
   LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
   LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
+
+  double startTime = 0.0;
+  double endTime   = 40.0;
+  (void) startTime; (void)endTime;
 
   NodeContainer sta;
   NodeContainer grp;
@@ -173,7 +175,7 @@ int main (int argc, char *argv[])
 //  LogComponentEnable ("Pmipv6Agent", logAll);
 //  LogComponentEnable ("Pmipv6MagNotifier", logAll);
  
-  int cnt = 2;
+  int cnt = 3;
   backbone.Create(cnt + 1);
   aps.Create(cnt);
   cn.Create(1);
@@ -202,13 +204,15 @@ int main (int argc, char *argv[])
   mag2Net.Add(mags.Get(1));
   mag2Net.Add(aps.Get(1));
 
-//  mag3Net.Add(mags.Get(2));
-//  mag3Net.Add(aps.Get(2));
+  mag3Net.Add(mags.Get(2));
+  mag3Net.Add(aps.Get(2));
 
   CsmaHelper csma, csma1;
   
   //MAG's MAC Address (for unify default gateway of MN)
   Mac48Address magMacAddr("00:00:AA:BB:CC:DD");
+  Mac48Address magMacAddr1("00:00:AA:BB:CC:EE");
+  Mac48Address magMacAddr2("00:00:AA:BB:CC:FF");
 
   Ipv6InterfaceContainer iifc;
   
@@ -229,7 +233,7 @@ int main (int argc, char *argv[])
   csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate(50000000)));
   csma.SetChannelAttribute ("Delay", TimeValue (MicroSeconds(100)));
   csma.SetDeviceAttribute ("Mtu", UintegerValue (1400));
-
+  NS_LOG_UNCOND("Assign backbone Addresses");
   backboneDevs = csma.Install(backbone);
   iifc = AssignIpv6Address(backboneDevs.Get(0), Ipv6Address("3ffe:1::1"), 64);
   backboneIfs.Add(iifc);
@@ -237,8 +241,8 @@ int main (int argc, char *argv[])
   backboneIfs.Add(iifc);
   iifc = AssignIpv6Address(backboneDevs.Get(2), Ipv6Address("3ffe:1::3"), 64);
   backboneIfs.Add(iifc);
-//  iifc = AssignIpv6Address(backboneDevs.Get(3), Ipv6Address("3ffe:1::4"), 64);
-//  backboneIfs.Add(iifc);
+  iifc = AssignIpv6Address(backboneDevs.Get(3), Ipv6Address("3ffe:1::4"), 64);
+  backboneIfs.Add(iifc);
   backboneIfs.SetForwarding(0, true);
   backboneIfs.SetDefaultRouteInAllNodes(0);
   
@@ -251,7 +255,7 @@ int main (int argc, char *argv[])
   positionAlloc->Add (Vector (0.0, -20.0, 0.0));   //LMA
   positionAlloc->Add (Vector (-50.0, 20.0, 0.0)); //MAG1
   positionAlloc->Add (Vector (50.0, 20.0, 0.0));  //MAG2
-//  positionAlloc->Add (Vector (150.0, 20.0, 0.0));  //MAG3
+  positionAlloc->Add (Vector (150.0, 20.0, 0.0));  //MAG3
   
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -271,19 +275,14 @@ int main (int argc, char *argv[])
   
   positionAlloc->Add (Vector (-50.0, 40.0, 0.0)); //MAG1AP
   positionAlloc->Add (Vector (50.0, 40.0, 0.0));  //MAG2AP
-//  positionAlloc->Add (Vector (150.0, 40.0, 0.0));  //MAG3AP
+  positionAlloc->Add (Vector (150.0, 40.0, 0.0));  //MAG3AP
   
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   
   mobility.Install (aps);
-
+  NS_LOG_UNCOND("MAG-AP Addresses");
   //Setting MAG1 and WLAN AP
-  mag1Devs = csma.Install(mag1Net);
-  mag1Devs.Get(0)->SetAddress(magMacAddr);
-  
-  mag1Ifs = AssignIpv6Address(mag1Devs.Get(0), Ipv6Address("3ffe:1:1::1"), 64);
-
   Ssid ssid = Ssid("MAG");
   YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default ();
   wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
@@ -291,7 +290,7 @@ int main (int argc, char *argv[])
   WifiHelper wifi = WifiHelper::Default ();
   NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
   YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
-  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (40));
+  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (30));
   wifiPhy.SetChannel (wifiChannel.Create ());
    
   wifiMac.SetType ("ns3::ApWifiMac",
@@ -299,10 +298,11 @@ int main (int argc, char *argv[])
 		           "BeaconGeneration", BooleanValue (true),
 		           "BeaconInterval", TimeValue (MicroSeconds (102400)));
 
+  mag1Devs = csma.Install(mag1Net);
+  mag1Devs.Get(0)->SetAddress(magMacAddr);
+  mag1Ifs = AssignIpv6Address(mag1Devs.Get(0), Ipv6Address("3ffe:1:1::1"), 64);
   mag1ApDev = wifi.Install (wifiPhy, wifiMac, mag1Net.Get(1));
-  
   mag1BrDev = bridge.Install (aps.Get(0), NetDeviceContainer(mag1ApDev, mag1Devs.Get(1)));
-  
   iifc = AssignWithoutAddress(mag1Devs.Get(1));
   mag1Ifs.Add(iifc);
   mag1Ifs.SetForwarding(0, true);
@@ -310,34 +310,27 @@ int main (int argc, char *argv[])
   
   //Setting MAG2
   mag2Devs = csma.Install(mag2Net);
-  mag2Devs.Get(0)->SetAddress(magMacAddr);
-  
+  mag2Devs.Get(0)->SetAddress(magMacAddr1);
   mag2Ifs = AssignIpv6Address(mag2Devs.Get(0), Ipv6Address("3ffe:1:2::1"), 64);
-  
   mag2ApDev = wifi.Install (wifiPhy, wifiMac, mag2Net.Get(1));
-  
   mag2BrDev = bridge.Install (aps.Get(1), NetDeviceContainer(mag2ApDev, mag2Devs.Get(1)));
-  
   iifc = AssignWithoutAddress(mag2Devs.Get(1));
   mag2Ifs.Add(iifc);
   mag2Ifs.SetForwarding(0, true);
   mag2Ifs.SetDefaultRouteInAllNodes(0);
   
-//  //Setting MAG3
-//  mag3Devs = csma.Install(mag3Net);
-//  mag3Devs.Get(0)->SetAddress(magMacAddr);
-//
-//  mag3Ifs = AssignIpv6Address(mag3Devs.Get(0), Ipv6Address("3ffe:1:2::1"), 64);
-//
-//  mag3ApDev = wifi.Install (wifiPhy, wifiMac, mag3Net.Get(1));
-//
-//  mag3BrDev = bridge.Install (aps.Get(2), NetDeviceContainer(mag3ApDev, mag3Devs.Get(1)));
-//
-//  iifc = AssignWithoutAddress(mag3Devs.Get(1));
-//  mag2Ifs.Add(iifc);
-//  mag2Ifs.SetForwarding(0, true);
-//  mag2Ifs.SetDefaultRouteInAllNodes(0);
+  //Setting MAG3
+  mag3Devs = csma.Install(mag3Net);
+  mag3Devs.Get(0)->SetAddress(magMacAddr2);
+  mag3Ifs = AssignIpv6Address(mag3Devs.Get(0), Ipv6Address("3ffe:1:3::1"), 64);
+  mag3ApDev = wifi.Install (wifiPhy, wifiMac, mag3Net.Get(1));
+  mag3BrDev = bridge.Install (aps.Get(2), NetDeviceContainer(mag3ApDev, mag3Devs.Get(1)));
+  iifc = AssignWithoutAddress(mag3Devs.Get(1));
+  mag3Ifs.Add(iifc);
+  mag3Ifs.SetForwarding(0, true);
+  mag3Ifs.SetDefaultRouteInAllNodes(0);
 
+  NS_LOG_UNCOND ("Create networks and assign MNN Addresses.");
   //setting station
   positionAlloc = CreateObject<ListPositionAllocator> ();
   
@@ -356,6 +349,7 @@ int main (int argc, char *argv[])
 
   staDevs.Add( wifi.Install (wifiPhy, wifiMac, sta));
 
+
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (-20.0, 20.0, 0.0)); //STA
   positionAlloc->Add (Vector (-20.0, 30.0, 0.0)); //STA
@@ -371,8 +365,8 @@ int main (int argc, char *argv[])
 
   NetDeviceContainer mnnDevs(staDevs, grpDevs);
   iifc = AssignIpv6Address(mnnDevs);
-  grpIfs.Add(iifc);
-
+  NS_LOG_UNCOND("STA Address:" << mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress());
+  Ipv6Address staAddress = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
 
 
   //attach PMIPv6 agents
@@ -395,7 +389,7 @@ int main (int argc, char *argv[])
   
   maghelper.Install (mags.Get(0), mag1Ifs.GetAddress(0, 0), aps.Get(0));
   maghelper.Install (mags.Get(1), mag2Ifs.GetAddress(0, 0), aps.Get(1));
-//  maghelper.Install (mags.Get(3), mag1Ifs.GetAddress(0, 0), aps.Get(2));
+  maghelper.Install (mags.Get(2), mag3Ifs.GetAddress(0, 0), aps.Get(2));
 
   
   AsciiTraceHelper ascii;
@@ -404,46 +398,45 @@ int main (int argc, char *argv[])
   
   wifiPhy.EnablePcap ("pmip6-wifi", mag1ApDev.Get(0));
   wifiPhy.EnablePcap ("pmip6-wifi", mag2ApDev.Get(0));
-//  wifiPhy.EnablePcap ("pmip6-wifi", mag3ApDev.Get(0));
+  wifiPhy.EnablePcap ("pmip6-wifi", mag3ApDev.Get(0));
   wifiPhy.EnablePcap ("pmip6-wifi", staDevs.Get(0));
-  
-  uint16_t port = 6000;
-  ApplicationContainer serverApps, clientApps;
-  NS_LOG_INFO ("Installing UDP server on MN");
 
-  UdpServerHelper server (port);
-  serverApps = server.Install (sta.Get(0));
-
-  NS_LOG_INFO ("Installing UDP client on CN");
-  uint32_t packetSize = 1024;
-  uint32_t maxPacketCount = 20;
-  Time interPacketInterval = MilliSeconds(1000);
-  UdpClientHelper udpClient(Ipv6Address("3ffe:1:4:1:200:ff:fe00:c"), port);
-  udpClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
-  udpClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
-  udpClient.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
-  clientApps = udpClient.Install (cn.Get (0));
+//  NS_LOG_INFO ("Installing UDP server on MN");
+//  uint16_t port = 6000;
+//  ApplicationContainer serverApps, clientApps;
+//  UdpServerHelper server (port);
+//  serverApps = server.Install (sta.Get(0));
+//
+//  NS_LOG_INFO ("Installing UDP client on CN");
+//  uint32_t packetSize = 1024;
+//  uint32_t maxPacketCount = 20;
+//  Time interPacketInterval = MilliSeconds(1000);
+//  UdpClientHelper udpClient(Ipv6Address(/*"3ffe:1:4:1:200:ff:fe00:e"*/staAddress), port);
+//  udpClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
+//  udpClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
+//  udpClient.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
+//  clientApps = udpClient.Install (cn.Get (0));
+//
+//  serverApps.Start (Seconds (startTime + 1.0));
+//  clientApps.Start (Seconds (startTime + 1.5));
+//  serverApps.Stop (Seconds (endTime));
+//  clientApps.Stop (Seconds (endTime));
 
   AnimationInterface anim("PMIPv6.xml");
   anim.SetMobilityPollInterval(Seconds(1));
-  anim.UpdateNodeDescription(lma.Get(0), "LMA");
+  anim.UpdateNodeDescription(backbone.Get(0), "LMA");
   anim.UpdateNodeDescription(cn.Get(0), "CN");
   anim.UpdateNodeDescription(sta.Get(0), "MNN");
   anim.UpdateNodeDescription(grp.Get(0), "MNN1");
   anim.UpdateNodeDescription(grp.Get(1), "MNN2");
   anim.UpdateNodeDescription(aps.Get(0), "AP1");
   anim.UpdateNodeDescription(aps.Get(1), "AP2");
-//  anim.UpdateNodeDescription(aps.Get(2), "AP3");
-  anim.UpdateNodeDescription(backbone.Get(0), "MAG1");
-  anim.UpdateNodeDescription(backbone.Get(1), "MAG2");
-//  anim.UpdateNodeDescription(backbone.Get(2), "MAG3");
+  anim.UpdateNodeDescription(aps.Get(2), "AP3");
+  anim.UpdateNodeDescription(backbone.Get(1), "MAG1");
+  anim.UpdateNodeDescription(backbone.Get(2), "MAG2");
+  anim.UpdateNodeDescription(backbone.Get(3), "MAG3");
 
-  serverApps.Start (Seconds (1.0));
-  clientApps.Start (Seconds (1.5));
-  serverApps.Stop (Seconds (20.0));
-  clientApps.Stop (Seconds (20.0));
-
-  Simulator::Stop (Seconds (20.0));
+  Simulator::Stop (Seconds (endTime));
   Simulator::Run ();
   Simulator::Destroy ();
 
