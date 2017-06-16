@@ -137,15 +137,19 @@ int main (int argc, char *argv[])
   NodeContainer outerNet;
   NodeContainer mag1Net;
   NodeContainer mag2Net;
+  NodeContainer mag3Net;
   
   NetDeviceContainer backboneDevs;
   NetDeviceContainer outerDevs;
   NetDeviceContainer mag1Devs;
   NetDeviceContainer mag2Devs;
+  NetDeviceContainer mag3Devs;
   NetDeviceContainer mag1ApDev;
   NetDeviceContainer mag2ApDev;
+  NetDeviceContainer mag3ApDev;
   NetDeviceContainer mag1BrDev;
   NetDeviceContainer mag2BrDev;
+  NetDeviceContainer mag3BrDev;
   NetDeviceContainer staDevs;
   NetDeviceContainer grpDevs;
   
@@ -153,6 +157,7 @@ int main (int argc, char *argv[])
   Ipv6InterfaceContainer outerIfs;
   Ipv6InterfaceContainer mag1Ifs;
   Ipv6InterfaceContainer mag2Ifs;
+  Ipv6InterfaceContainer mag3Ifs;
   Ipv6InterfaceContainer staIfs;
   Ipv6InterfaceContainer grpIfs;
   
@@ -168,8 +173,9 @@ int main (int argc, char *argv[])
 //  LogComponentEnable ("Pmipv6Agent", logAll);
 //  LogComponentEnable ("Pmipv6MagNotifier", logAll);
  
-  backbone.Create(3);
-  aps.Create(2);
+  int cnt = 2;
+  backbone.Create(cnt + 1);
+  aps.Create(cnt);
   cn.Create(1);
   sta.Create(1);
   grp.Create(2);
@@ -185,6 +191,7 @@ int main (int argc, char *argv[])
   
   mags.Add(backbone.Get(1));
   mags.Add(backbone.Get(2));
+  mags.Add(backbone.Get(3));
   
   outerNet.Add(lma);
   outerNet.Add(cn);
@@ -194,6 +201,9 @@ int main (int argc, char *argv[])
 
   mag2Net.Add(mags.Get(1));
   mag2Net.Add(aps.Get(1));
+
+//  mag3Net.Add(mags.Get(2));
+//  mag3Net.Add(aps.Get(2));
 
   CsmaHelper csma, csma1;
   
@@ -227,6 +237,8 @@ int main (int argc, char *argv[])
   backboneIfs.Add(iifc);
   iifc = AssignIpv6Address(backboneDevs.Get(2), Ipv6Address("3ffe:1::3"), 64);
   backboneIfs.Add(iifc);
+//  iifc = AssignIpv6Address(backboneDevs.Get(3), Ipv6Address("3ffe:1::4"), 64);
+//  backboneIfs.Add(iifc);
   backboneIfs.SetForwarding(0, true);
   backboneIfs.SetDefaultRouteInAllNodes(0);
   
@@ -239,6 +251,7 @@ int main (int argc, char *argv[])
   positionAlloc->Add (Vector (0.0, -20.0, 0.0));   //LMA
   positionAlloc->Add (Vector (-50.0, 20.0, 0.0)); //MAG1
   positionAlloc->Add (Vector (50.0, 20.0, 0.0));  //MAG2
+//  positionAlloc->Add (Vector (150.0, 20.0, 0.0));  //MAG3
   
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -258,6 +271,7 @@ int main (int argc, char *argv[])
   
   positionAlloc->Add (Vector (-50.0, 40.0, 0.0)); //MAG1AP
   positionAlloc->Add (Vector (50.0, 40.0, 0.0));  //MAG2AP
+//  positionAlloc->Add (Vector (150.0, 40.0, 0.0));  //MAG3AP
   
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
@@ -309,6 +323,21 @@ int main (int argc, char *argv[])
   mag2Ifs.SetForwarding(0, true);
   mag2Ifs.SetDefaultRouteInAllNodes(0);
   
+//  //Setting MAG3
+//  mag3Devs = csma.Install(mag3Net);
+//  mag3Devs.Get(0)->SetAddress(magMacAddr);
+//
+//  mag3Ifs = AssignIpv6Address(mag3Devs.Get(0), Ipv6Address("3ffe:1:2::1"), 64);
+//
+//  mag3ApDev = wifi.Install (wifiPhy, wifiMac, mag3Net.Get(1));
+//
+//  mag3BrDev = bridge.Install (aps.Get(2), NetDeviceContainer(mag3ApDev, mag3Devs.Get(1)));
+//
+//  iifc = AssignWithoutAddress(mag3Devs.Get(1));
+//  mag2Ifs.Add(iifc);
+//  mag2Ifs.SetForwarding(0, true);
+//  mag2Ifs.SetDefaultRouteInAllNodes(0);
+
   //setting station
   positionAlloc = CreateObject<ListPositionAllocator> ();
   
@@ -366,6 +395,7 @@ int main (int argc, char *argv[])
   
   maghelper.Install (mags.Get(0), mag1Ifs.GetAddress(0, 0), aps.Get(0));
   maghelper.Install (mags.Get(1), mag2Ifs.GetAddress(0, 0), aps.Get(1));
+//  maghelper.Install (mags.Get(3), mag1Ifs.GetAddress(0, 0), aps.Get(2));
 
   
   AsciiTraceHelper ascii;
@@ -374,6 +404,7 @@ int main (int argc, char *argv[])
   
   wifiPhy.EnablePcap ("pmip6-wifi", mag1ApDev.Get(0));
   wifiPhy.EnablePcap ("pmip6-wifi", mag2ApDev.Get(0));
+//  wifiPhy.EnablePcap ("pmip6-wifi", mag3ApDev.Get(0));
   wifiPhy.EnablePcap ("pmip6-wifi", staDevs.Get(0));
   
   uint16_t port = 6000;
@@ -402,8 +433,10 @@ int main (int argc, char *argv[])
   anim.UpdateNodeDescription(grp.Get(1), "MNN2");
   anim.UpdateNodeDescription(aps.Get(0), "AP1");
   anim.UpdateNodeDescription(aps.Get(1), "AP2");
+//  anim.UpdateNodeDescription(aps.Get(2), "AP3");
   anim.UpdateNodeDescription(backbone.Get(0), "MAG1");
   anim.UpdateNodeDescription(backbone.Get(1), "MAG2");
+//  anim.UpdateNodeDescription(backbone.Get(2), "MAG3");
 
   serverApps.Start (Seconds (1.0));
   clientApps.Start (Seconds (1.5));
