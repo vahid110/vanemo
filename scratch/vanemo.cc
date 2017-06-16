@@ -126,7 +126,7 @@ int main (int argc, char *argv[])
   LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 
   NodeContainer sta;
-//  NodeContainer grp;
+  NodeContainer grp;
   NodeContainer cn;
   NodeContainer backbone;
   NodeContainer aps;
@@ -172,14 +172,14 @@ int main (int argc, char *argv[])
   aps.Create(2);
   cn.Create(1);
   sta.Create(1);
-//  grp.Create(2);
+  grp.Create(2);
 
   InternetStackHelper internet;
   internet.Install (backbone);
   internet.Install (aps);
   internet.Install (cn);
   internet.Install (sta);
-//  internet.Install (grp);
+  internet.Install (grp);
 
   lma.Add(backbone.Get(0));
   
@@ -188,7 +188,7 @@ int main (int argc, char *argv[])
   
   outerNet.Add(lma);
   outerNet.Add(cn);
-  
+
   mag1Net.Add(mags.Get(0));
   mag1Net.Add(aps.Get(0));
 
@@ -312,7 +312,7 @@ int main (int argc, char *argv[])
   //setting station
   positionAlloc = CreateObject<ListPositionAllocator> ();
   
-  positionAlloc->Add (Vector (-50.0, 60.0, 0.0)); //STA
+  positionAlloc->Add (Vector (-50.0, 50.0, 0.0)); //STA
   
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");  
@@ -328,19 +328,19 @@ int main (int argc, char *argv[])
   staDevs.Add( wifi.Install (wifiPhy, wifiMac, sta));
 
   positionAlloc = CreateObject<ListPositionAllocator> ();
-  positionAlloc->Add (Vector (-10.0, 00.0, 0.0)); //STA
-  positionAlloc->Add (Vector (-20.0, 00.0, 0.0)); //STA
+  positionAlloc->Add (Vector (-20.0, 20.0, 0.0)); //STA
+  positionAlloc->Add (Vector (-20.0, 30.0, 0.0)); //STA
   mobility.SetPositionAllocator (positionAlloc);
   mobility.PushReferenceMobilityModel(sta.Get (0));
-//  mobility.Install(grp);
+  mobility.Install(grp);
 
   //WLAN interface
   wifiMac.SetType ("ns3::StaWifiMac",
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
-//  grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
+  grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
 
-  NetDeviceContainer mnnDevs(staDevs/*, grpDevs*/);
+  NetDeviceContainer mnnDevs(staDevs, grpDevs);
   iifc = AssignIpv6Address(mnnDevs);
   grpIfs.Add(iifc);
 
@@ -351,8 +351,8 @@ int main (int argc, char *argv[])
 
   //adding profile for each station  
   profile->AddProfile(Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
-//  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
-//  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
 
   Pmipv6LmaHelper lmahelper;
   lmahelper.SetPrefixPoolBase(Ipv6Address("3ffe:1:4::"), 48);
@@ -398,8 +398,8 @@ int main (int argc, char *argv[])
   anim.UpdateNodeDescription(lma.Get(0), "LMA");
   anim.UpdateNodeDescription(cn.Get(0), "CN");
   anim.UpdateNodeDescription(sta.Get(0), "MNN");
-//  anim.UpdateNodeDescription(grp.Get(0), "MNN1");
-//  anim.UpdateNodeDescription(grp.Get(1), "MNN2");
+  anim.UpdateNodeDescription(grp.Get(0), "MNN1");
+  anim.UpdateNodeDescription(grp.Get(1), "MNN2");
   anim.UpdateNodeDescription(aps.Get(0), "AP1");
   anim.UpdateNodeDescription(aps.Get(1), "AP2");
   anim.UpdateNodeDescription(backbone.Get(0), "MAG1");
@@ -407,10 +407,10 @@ int main (int argc, char *argv[])
 
   serverApps.Start (Seconds (1.0));
   clientApps.Start (Seconds (1.5));
-  serverApps.Stop (Seconds (10.0));
-  clientApps.Stop (Seconds (10.0));
+  serverApps.Stop (Seconds (20.0));
+  clientApps.Stop (Seconds (20.0));
 
-  Simulator::Stop (Seconds (10.0));
+  Simulator::Stop (Seconds (20.0));
   Simulator::Run ();
   Simulator::Destroy ();
 
