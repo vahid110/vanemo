@@ -277,7 +277,7 @@ int main (int argc, char *argv[])
   WifiHelper wifi = WifiHelper::Default ();
   NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
   YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
-  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (200));
+  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (40));
   wifiPhy.SetChannel (wifiChannel.Create ());
    
   wifiMac.SetType ("ns3::ApWifiMac",
