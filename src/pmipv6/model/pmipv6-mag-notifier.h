@@ -98,19 +98,19 @@ public:
   void SetTargetAddress(Ipv6Address target);
   Ipv6Address GetTargetAddress();  
   
-  void SetNewNodeCallback (Callback<void, Mac48Address, Mac48Address, uint8_t> cb);
+  void SetNewNodeCallback (Callback<void, Mac48Address, Mac48Address, uint8_t, bool> cb);
   
 protected:
   virtual void DoDispose ();
 
 private:
-  void HandleNewNode(Mac48Address from, Mac48Address to, uint8_t att);
+  void HandleNewNode(Mac48Address from, Mac48Address to, uint8_t att, bool rec = false);
   
   Ptr<Node> m_node;
   
   Ipv6Address m_targetAddress;
   
-  Callback<void, Mac48Address, Mac48Address, uint8_t> m_newNodeCallback;
+  Callback<void, Mac48Address, Mac48Address, uint8_t, bool> m_newNodeCallback;
   
 };
 

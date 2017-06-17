@@ -759,9 +759,10 @@ RegularWifiMac::TxFailed (const WifiMacHeader &hdr)
   m_txErrCallback (hdr);
 }
 
-void RegularWifiMac::SetNewHostCallback (Callback<void, Mac48Address, Mac48Address, uint8_t> newHost)
+void RegularWifiMac::SetNewHostCallback (Callback<void, Mac48Address, Mac48Address, uint8_t, bool> newHost)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_UNCOND("RegularWifiMac::SetNewHostCallback()");
   m_newHostCallback = newHost;
 }
 

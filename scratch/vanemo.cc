@@ -118,10 +118,10 @@ int main (int argc, char *argv[])
   LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 
   double startTime = 0.0;
-  double endTime   = 50.0;
+  double endTime   = 20.0;
   (void) startTime; (void)endTime;
 
-  int cnt = 4;
+  int cnt = 1;
 
   NodeContainer sta;
   NodeContainer grp;
@@ -134,9 +134,6 @@ int main (int argc, char *argv[])
   NodeContainer mags;
   NodeContainer outerNet;
   std::vector<NodeContainer> magNets;
-  NodeContainer mag1Net;
-  NodeContainer mag2Net;
-  NodeContainer mag3Net;
   
   NetDeviceContainer backboneDevs;
   NetDeviceContainer outerDevs;
@@ -202,7 +199,7 @@ int main (int argc, char *argv[])
   //MAC Address for MAGs
   Mac48Address magMacAddrUniq("00:00:AA:BB:CC:DD"); //unused
   std::vector<Mac48Address> magMacAddrs;
-  NS_LOG_UNCOND("MAC Addresses");
+  NS_LOG_UNCOND("MAC Addresses:");
   for (int i = 0; i < cnt; i++)
   {
 	  std::ostringstream out("");
@@ -215,7 +212,7 @@ int main (int argc, char *argv[])
   }
 
   Ipv6InterfaceContainer iifc;
-
+  NS_LOG_UNCOND("Outer Network:");
   //Outer Dev CSMA and Addressing
   //Link between CN and LMA is 50Mbps and 0.1ms delay
   csma1.SetChannelAttribute ("DataRate", DataRateValue (DataRate(50000000)));
@@ -246,7 +243,6 @@ int main (int argc, char *argv[])
 	  backboneIfs.Add(iifc);
 	  out.str("");
   }
-
   backboneIfs.SetForwarding(0, true);
   backboneIfs.SetDefaultRouteInAllNodes(0);
 
@@ -262,12 +258,14 @@ int main (int argc, char *argv[])
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (backbone);
+
   //CN Mobility
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (75.0, -20.0, 0.0));   //CN
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (cn);
+
   //AP mobility
   positionAlloc = CreateObject<ListPositionAllocator> ();
   for (int i = 0; i < cnt; i++)
@@ -303,6 +301,7 @@ int main (int argc, char *argv[])
 	  std::ostringstream out("");
 	  out << "3ffe:1:" << i+1 << "::1";
 	  magIfs.push_back(AssignIpv6Address(magDevs[i].Get(0), Ipv6Address(out.str().c_str()), 64));
+	  NS_LOG_UNCOND("MAG" << i << " Addresses: " << magIfs[i].GetAddress(0,0) << " and " << magIfs[i].GetAddress(0,1));
 	  out.str("");
 	  magApDevs.push_back(wifi.Install (wifiPhy, wifiMac, magNets[i].Get(1)));
 	  magBrDevs.push_back(bridge.Install (aps.Get(i), NetDeviceContainer(magApDevs[i], magDevs[i].Get(1))));
@@ -313,13 +312,14 @@ int main (int argc, char *argv[])
 	  magIfs[i].SetDefaultRouteInAllNodes(0);
   }
 
-  NS_LOG_UNCOND ("Create networks and assign MNN Addresses.");
   //STA Mobility
+  NS_LOG_UNCOND ("Create networks and assign MNN Addresses.");
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (-50.0, 50.0, 0.0)); //STA
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");  
   mobility.Install(sta);
+
   //STA movement
   Ptr<ConstantVelocityMobilityModel> cvm = sta.Get(0)->GetObject<ConstantVelocityMobilityModel>();
   cvm->SetVelocity(Vector (10.0, 0, 0)); //move to left to right 10.0m/s
@@ -347,30 +347,13 @@ int main (int argc, char *argv[])
   NetDeviceContainer mnnDevs(staDevs, grpDevs);
   iifc = AssignIpv6Address(mnnDevs);
 
-  Ipv6Address staAddress00 = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(0, 0).GetAddress();
-  Ipv6Address mnn2Address00 = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(0, 0).GetAddress();
-  NS_LOG_UNCOND("STA Address00:  " << staAddress00);
-  NS_LOG_UNCOND("Mnn2 Address00:  " << mnn2Address00);
-
-  NS_LOG_UNCOND("STA Address01:  NO!");
-  NS_LOG_UNCOND("Mnn2 Address01:  NO!");
-
-  Ipv6Address staAddress10 = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 0).GetAddress();
-  Ipv6Address mnn2Address10 = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 0).GetAddress();
-  NS_LOG_UNCOND("STA Address10:  " << staAddress10);
-  NS_LOG_UNCOND("Mnn2 Address10:  " << mnn2Address10);
-
-  Ipv6Address staAddress11 = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
-  Ipv6Address mnn2Address11 = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
-  NS_LOG_UNCOND("STA Address11:  " << staAddress11);
-  NS_LOG_UNCOND("Mnn2 Address11:  " << mnn2Address11);
-
-
+  //End addresses
   Ipv6Address staAddress = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
   Ipv6Address mnn2Address = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
   NS_LOG_UNCOND("STA Address:" << staAddress);
   NS_LOG_UNCOND("Mnn2 Address:" << mnn2Address);
-//  //MNN routing
+
+  //MNN routing
   Ipv6StaticRoutingHelper routingHelper;
   iifc.SetForwarding (0, true);
   iifc.SetDefaultRouteInAllNodes (0);
@@ -435,6 +418,7 @@ int main (int argc, char *argv[])
   ApplicationContainer serverApps, clientApps;
   UdpServerHelper server (port);
   serverApps = server.Install (destNode);
+
   //Clinet Application
   NS_LOG_INFO ("Installing UDP client on CN");
   uint32_t packetSize = 1024;

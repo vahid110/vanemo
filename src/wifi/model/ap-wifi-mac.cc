@@ -447,8 +447,13 @@ ApWifiMac::TxOk (const WifiMacHeader &hdr)
       m_stationManager->RecordGotAssocTxOk (hdr.GetAddr1 ());
       if (!m_newHostCallback.IsNull ())
       {
-		m_newHostCallback (hdr.GetAddr1 (), GetAddress (), 4 /* WIFI */);
+        NS_LOG_UNCOND("ApWifiMac::TxOk->m_newHostCallback(" << hdr.GetAddr1 () << " , " << GetAddress () << "," << 4 << ")");
+		m_newHostCallback (hdr.GetAddr1 (), GetAddress (), 4 /* WIFI */, false);
 	  }
+      else
+      {
+        NS_LOG_UNCOND("ApWifiMac::TxOk->m_newHostCallback.IsNull");
+      }
     }
 }
 
