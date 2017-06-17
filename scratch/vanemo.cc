@@ -118,7 +118,7 @@ int main (int argc, char *argv[])
   LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 
   double startTime = 0.0;
-  double endTime   = 35.0;
+  double endTime   = 50.0;
   (void) startTime; (void)endTime;
 
   int cnt = 4;
@@ -199,10 +199,8 @@ int main (int argc, char *argv[])
   }
 
   CsmaHelper csma, csma1;
-  
-  //MAG's MAC Address (for unify default gateway of MN)
+  //MAC Address for MAGs
   Mac48Address magMacAddrUniq("00:00:AA:BB:CC:DD"); //unused
-  //MAG's MAC Address (for unify default gateway of MN)
   std::vector<Mac48Address> magMacAddrs;
   NS_LOG_UNCOND("MAC Addresses");
   for (int i = 0; i < cnt; i++)
@@ -217,11 +215,12 @@ int main (int argc, char *argv[])
   }
 
   Ipv6InterfaceContainer iifc;
+
+  //Outer Dev CSMA and Addressing
   //Link between CN and LMA is 50Mbps and 0.1ms delay
   csma1.SetChannelAttribute ("DataRate", DataRateValue (DataRate(50000000)));
   csma1.SetChannelAttribute ("Delay", TimeValue (MicroSeconds(100)));
   csma1.SetDeviceAttribute ("Mtu", UintegerValue (1400));
-  
   outerDevs = csma1.Install(outerNet);
   iifc = AssignIpv6Address(outerDevs.Get(0), Ipv6Address("3ffe:2::1"), 64);
   outerIfs.Add(iifc);
@@ -234,6 +233,8 @@ int main (int argc, char *argv[])
   csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate(50000000)));
   csma.SetChannelAttribute ("Delay", TimeValue (MicroSeconds(100)));
   csma.SetDeviceAttribute ("Mtu", UintegerValue (1400));
+
+  //Backbone Addressing
   NS_LOG_UNCOND("Assign backbone Addresses");
   backboneDevs = csma.Install(backbone);
   for (int i = 0; i <= cnt; i++)
@@ -248,10 +249,10 @@ int main (int argc, char *argv[])
 
   backboneIfs.SetForwarding(0, true);
   backboneIfs.SetDefaultRouteInAllNodes(0);
-  
+
+  //Backbone Mobility
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc;
-  
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (0.0, -20.0, 0.0));   //LMA
   for (int i = 0; i < cnt; i++)
@@ -261,13 +262,13 @@ int main (int argc, char *argv[])
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (backbone);
-  
+  //CN Mobility
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (75.0, -20.0, 0.0));   //CN
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
   mobility.Install (cn);
-  
+  //AP mobility
   positionAlloc = CreateObject<ListPositionAllocator> ();
   for (int i = 0; i < cnt; i++)
   {
@@ -275,24 +276,24 @@ int main (int argc, char *argv[])
   }
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  
   mobility.Install (aps);
+
+  //Wifi
   NS_LOG_UNCOND("MAG-AP Addresses");
-  //Setting WLAN AP
   Ssid ssid = Ssid("MAG");
   YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default ();
   wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
-
   WifiHelper wifi = WifiHelper::Default ();
   NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
   YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
-  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (30));
+  wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (28));
   wifiPhy.SetChannel (wifiChannel.Create ());
-   
   wifiMac.SetType ("ns3::ApWifiMac",
 		           "Ssid", SsidValue (ssid),
 		           "BeaconGeneration", BooleanValue (true),
 		           "BeaconInterval", TimeValue (MicroSeconds (102400)));
+
+  //MAG Wifi Bridging and addressing
   BridgeHelper bridge;
   (void)magMacAddrUniq;
   for (int i = 0; i < cnt; i++)
@@ -312,32 +313,34 @@ int main (int argc, char *argv[])
   }
 
   NS_LOG_UNCOND ("Create networks and assign MNN Addresses.");
-  //setting station
+  //STA Mobility
   positionAlloc = CreateObject<ListPositionAllocator> ();
-  
   positionAlloc->Add (Vector (-50.0, 50.0, 0.0)); //STA
-  
   mobility.SetPositionAllocator (positionAlloc);
   mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");  
   mobility.Install(sta);
-  
+  //STA movement
   Ptr<ConstantVelocityMobilityModel> cvm = sta.Get(0)->GetObject<ConstantVelocityMobilityModel>();
   cvm->SetVelocity(Vector (10.0, 0, 0)); //move to left to right 10.0m/s
-  //WLAN interface
+  //STA Wifi
   wifiMac.SetType ("ns3::StaWifiMac",
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
 
   staDevs.Add( wifi.Install (wifiPhy, wifiMac, sta));
 
-
+  //MNNs Mobility
   positionAlloc = CreateObject<ListPositionAllocator> ();
-  positionAlloc->Add (Vector (-20.0, 20.0, 0.0)); //STA
-  positionAlloc->Add (Vector (-20.0, 30.0, 0.0)); //STA
+
+  for(unsigned int i = 0; i < grp.GetN(); i++)
+  {
+	  positionAlloc->Add (Vector (-20.0, (i*10) + 20.0, 0.0)); //MNNs
+  }
   mobility.SetPositionAllocator (positionAlloc);
   mobility.PushReferenceMobilityModel(sta.Get (0));
   mobility.Install(grp);
 
+  //Mobile Addressing
   grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
   NetDeviceContainer mnnDevs(staDevs, grpDevs);
   iifc = AssignIpv6Address(mnnDevs);
@@ -345,18 +348,39 @@ int main (int argc, char *argv[])
   Ipv6Address mnn2Address = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
   NS_LOG_UNCOND("STA Address:" << staAddress);
   NS_LOG_UNCOND("Mnn2 Address:" << mnn2Address);
+//  //MNN routing
+  Ipv6StaticRoutingHelper routingHelper;
+  iifc.SetForwarding (0, true);
+  iifc.SetDefaultRouteInAllNodes (0);
+  NS_LOG_UNCOND("STA Routing address:" << iifc.GetAddress (0, 0));
+  NS_LOG_UNCOND("Destination Routing address:" << iifc.GetAddress (2, 0));
+//  // manually inject a static route in STA.
+//  Ptr<Ipv6StaticRouting> routing = routingHelper.GetStaticRouting (sta.Get(0)->GetObject<Ipv6> ());
+//  routing->AddHostRouteTo (iifc.GetAddress (2, 0), 0/*iifc.GetAddress (0, 0)*//*, iifc.GetInterfaceIndex (2)*/);
+//  // manually inject a static route in APs.
+//  for (int i = 0; i < cnt; i++)
+//  {
+//	  Ipv6StaticRoutingHelper routingHelper;
+//	  Ptr<Ipv6StaticRouting> routing = routingHelper.GetStaticRouting (aps.Get(i)->GetObject<Ipv6> ());
+//	  routing->AddHostRouteTo (iifc.GetAddress (2, 0), iifc.GetAddress (0, 0), magIfs[i].GetInterfaceIndex(0));
+//  }
 
-  //attach PMIPv6 agents
+
+  //LMA Profiling
   Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
   profile->AddProfile(Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
-  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
-  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(1)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+  for(unsigned int i = 0; i < grpDevs.GetN(); i++)
+  {
+	  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(i)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(i)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+  }
 
+  //LMA Helper
   Pmipv6LmaHelper lmahelper;
   lmahelper.SetPrefixPoolBase(Ipv6Address("3ffe:1:4::"), 48);
   lmahelper.SetProfileHelper(profile);
   lmahelper.Install(lma.Get(0));
   
+  //MAG Helper
   Pmipv6MagHelper maghelper;
   maghelper.SetProfileHelper(profile);
   for (int i = 0; i < cnt; i++)
@@ -364,6 +388,7 @@ int main (int argc, char *argv[])
 	  maghelper.Install (mags.Get(i), magIfs[i].GetAddress(0, 0), aps.Get(i));
   }
   
+  //Pcap
   AsciiTraceHelper ascii;
   csma.EnableAsciiAll (ascii.CreateFileStream ("pmip6-wifi.tr"));
   csma.EnablePcapAll (std::string ("pmip6-csma"), false);
@@ -375,17 +400,23 @@ int main (int argc, char *argv[])
   wifiPhy.EnablePcap ("pmip6-wifi", staDevs.Get(0));
   wifiPhy.EnablePcap ("pmip6-wifi", mnnDevs.Get(2));
 
+  //Server Application
+  Ipv6Address &destAddress = staAddress;
+  Ptr<Node> destNode = sta.Get(0);
+//  Ipv6Address &destAddress = mnn2Address;
+//  Ptr<Node> destNode = grp.Get(1);
+
   NS_LOG_INFO ("Installing UDP server on MN");
   uint16_t port = 6000;
   ApplicationContainer serverApps, clientApps;
   UdpServerHelper server (port);
-  serverApps = server.Install (grp.Get(1));
-
+  serverApps = server.Install (destNode);
+  //Clinet Application
   NS_LOG_INFO ("Installing UDP client on CN");
   uint32_t packetSize = 1024;
   uint32_t maxPacketCount = 30;
   Time interPacketInterval = MilliSeconds(1000);
-  UdpClientHelper udpClient(Ipv6Address(mnn2Address), port);
+  UdpClientHelper udpClient(destAddress, port);
   udpClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
   udpClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
   udpClient.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
@@ -396,13 +427,12 @@ int main (int argc, char *argv[])
   serverApps.Stop (Seconds (endTime));
   clientApps.Stop (Seconds (endTime));
 
+  //Anim
   AnimationInterface anim("PMIPv6.xml");
   anim.SetMobilityPollInterval(Seconds(1));
   anim.UpdateNodeDescription(backbone.Get(0), "LMA");
   anim.UpdateNodeDescription(cn.Get(0), "CN");
   anim.UpdateNodeDescription(sta.Get(0), "MNN");
-  anim.UpdateNodeDescription(grp.Get(0), "MNN1");
-  anim.UpdateNodeDescription(grp.Get(1), "MNN2");
   for (int i = 0; i < cnt; i++)
   {
 	  std::ostringstream out("");
@@ -414,10 +444,18 @@ int main (int argc, char *argv[])
 	  out.str("");
   }
 
+  for(unsigned int i = 0; i < grp.GetN(); i++)
+  {
+	  std::ostringstream out("");
+	  out << "MN" << i+1;
+	  anim.UpdateNodeDescription(grp.Get(i), out.str().c_str());
+	  out.str("");
+  }
+
+  //Run
   Simulator::Stop (Seconds (endTime));
   Simulator::Run ();
   Simulator::Destroy ();
 
   return 0;
 }
-
