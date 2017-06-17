@@ -118,7 +118,7 @@ int main (int argc, char *argv[])
   LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 
   double startTime = 0.0;
-  double endTime   = 50.0;
+  double endTime   = 35.0;
   (void) startTime; (void)endTime;
 
   int cnt = 4;
@@ -341,8 +341,10 @@ int main (int argc, char *argv[])
   grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
   NetDeviceContainer mnnDevs(staDevs, grpDevs);
   iifc = AssignIpv6Address(mnnDevs);
-  NS_LOG_UNCOND("STA Address:" << mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress());
   Ipv6Address staAddress = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
+  Ipv6Address mnn2Address = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
+  NS_LOG_UNCOND("STA Address:" << staAddress);
+  NS_LOG_UNCOND("Mnn2 Address:" << mnn2Address);
 
   //attach PMIPv6 agents
   Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
@@ -371,18 +373,19 @@ int main (int argc, char *argv[])
 	  wifiPhy.EnablePcap ("pmip6-wifi", magApDevs[i].Get(0));
   }
   wifiPhy.EnablePcap ("pmip6-wifi", staDevs.Get(0));
+  wifiPhy.EnablePcap ("pmip6-wifi", mnnDevs.Get(2));
 
   NS_LOG_INFO ("Installing UDP server on MN");
   uint16_t port = 6000;
   ApplicationContainer serverApps, clientApps;
   UdpServerHelper server (port);
-  serverApps = server.Install (sta.Get(0));
+  serverApps = server.Install (grp.Get(1));
 
   NS_LOG_INFO ("Installing UDP client on CN");
   uint32_t packetSize = 1024;
   uint32_t maxPacketCount = 30;
   Time interPacketInterval = MilliSeconds(1000);
-  UdpClientHelper udpClient(Ipv6Address(staAddress), port);
+  UdpClientHelper udpClient(Ipv6Address(mnn2Address), port);
   udpClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
   udpClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
   udpClient.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
