@@ -307,6 +307,7 @@ int main (int argc, char *argv[])
 	  magApDevs.push_back(wifi.Install (wifiPhy, wifiMac, magNets[i].Get(1)));
 	  magBrDevs.push_back(bridge.Install (aps.Get(i), NetDeviceContainer(magApDevs[i], magDevs[i].Get(1))));
 	  iifc = AssignWithoutAddress(magDevs[i].Get(1));
+	  NS_LOG_UNCOND("AP" << i << " Mac Addresses: " << magDevs[i].Get(1)->GetAddress());
 	  magIfs[i].Add(iifc);
 	  magIfs[i].SetForwarding(0, true);
 	  magIfs[i].SetDefaultRouteInAllNodes(0);
@@ -328,6 +329,7 @@ int main (int argc, char *argv[])
 	               "ActiveProbing", BooleanValue (false));
 
   staDevs.Add( wifi.Install (wifiPhy, wifiMac, sta));
+  NS_LOG_UNCOND("STA Mac Addresses: " << staDevs.Get(0)->GetAddress());
 
   //MNNs Mobility
   positionAlloc = CreateObject<ListPositionAllocator> ();
@@ -344,6 +346,26 @@ int main (int argc, char *argv[])
   grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
   NetDeviceContainer mnnDevs(staDevs, grpDevs);
   iifc = AssignIpv6Address(mnnDevs);
+
+  Ipv6Address staAddress00 = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(0, 0).GetAddress();
+  Ipv6Address mnn2Address00 = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(0, 0).GetAddress();
+  NS_LOG_UNCOND("STA Address00:  " << staAddress00);
+  NS_LOG_UNCOND("Mnn2 Address00:  " << mnn2Address00);
+
+  NS_LOG_UNCOND("STA Address01:  NO!");
+  NS_LOG_UNCOND("Mnn2 Address01:  NO!");
+
+  Ipv6Address staAddress10 = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 0).GetAddress();
+  Ipv6Address mnn2Address10 = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 0).GetAddress();
+  NS_LOG_UNCOND("STA Address10:  " << staAddress10);
+  NS_LOG_UNCOND("Mnn2 Address10:  " << mnn2Address10);
+
+  Ipv6Address staAddress11 = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
+  Ipv6Address mnn2Address11 = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
+  NS_LOG_UNCOND("STA Address11:  " << staAddress11);
+  NS_LOG_UNCOND("Mnn2 Address11:  " << mnn2Address11);
+
+
   Ipv6Address staAddress = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
   Ipv6Address mnn2Address = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
   NS_LOG_UNCOND("STA Address:" << staAddress);
@@ -352,8 +374,8 @@ int main (int argc, char *argv[])
   Ipv6StaticRoutingHelper routingHelper;
   iifc.SetForwarding (0, true);
   iifc.SetDefaultRouteInAllNodes (0);
-  NS_LOG_UNCOND("STA Routing address:" << iifc.GetAddress (0, 0));
-  NS_LOG_UNCOND("Destination Routing address:" << iifc.GetAddress (2, 0));
+  NS_LOG_UNCOND("STA Routing address:" << iifc.GetAddress (0, 1));
+  NS_LOG_UNCOND("Destination Routing address:" << iifc.GetAddress (2, 1));
 //  // manually inject a static route in STA.
 //  Ptr<Ipv6StaticRouting> routing = routingHelper.GetStaticRouting (sta.Get(0)->GetObject<Ipv6> ());
 //  routing->AddHostRouteTo (iifc.GetAddress (2, 0), 0/*iifc.GetAddress (0, 0)*//*, iifc.GetInterfaceIndex (2)*/);
@@ -375,12 +397,14 @@ int main (int argc, char *argv[])
   }
 
   //LMA Helper
+  NS_LOG_UNCOND("LMA Helper");
   Pmipv6LmaHelper lmahelper;
   lmahelper.SetPrefixPoolBase(Ipv6Address("3ffe:1:4::"), 48);
   lmahelper.SetProfileHelper(profile);
   lmahelper.Install(lma.Get(0));
   
   //MAG Helper
+  NS_LOG_UNCOND("MAG Helper");
   Pmipv6MagHelper maghelper;
   maghelper.SetProfileHelper(profile);
   for (int i = 0; i < cnt; i++)
@@ -453,6 +477,7 @@ int main (int argc, char *argv[])
   }
 
   //Run
+  NS_LOG_UNCOND("Run");
   Simulator::Stop (Seconds (endTime));
   Simulator::Run ();
   Simulator::Destroy ();
