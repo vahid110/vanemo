@@ -29,6 +29,7 @@
 #include "ns3/ipv6-static-source-routing.h"
 #include "ns3/ipv6-routing-table-entry.h"
 #include "ns3/netanim-module.h"
+#include "ns3/group-finder.h"
 
 #include <iostream>
 #include <iomanip>
@@ -197,7 +198,6 @@ int main (int argc, char *argv[])
 
   CsmaHelper csma, csma1;
   //MAC Address for MAGs
-  Mac48Address magMacAddrUniq("00:00:AA:BB:CC:DD"); //unused
   std::vector<Mac48Address> magMacAddrs;
   NS_LOG_UNCOND("MAC Addresses:");
   for (int i = 0; i < cnt; i++)
@@ -293,7 +293,6 @@ int main (int argc, char *argv[])
 
   //MAG Wifi Bridging and addressing
   BridgeHelper bridge;
-  (void)magMacAddrUniq;
   for (int i = 0; i < cnt; i++)
   {
 	  magDevs.push_back(csma.Install(magNets[i]));
@@ -352,6 +351,7 @@ int main (int argc, char *argv[])
   Ipv6Address mnn2Address = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
   NS_LOG_UNCOND("STA Address:" << staAddress);
   NS_LOG_UNCOND("Mnn2 Address:" << mnn2Address);
+
 
   //MNN routing
   Ipv6StaticRoutingHelper routingHelper;
@@ -413,14 +413,43 @@ int main (int argc, char *argv[])
 //  Ipv6Address &destAddress = mnn2Address;
 //  Ptr<Node> destNode = grp.Get(1);
 
-  NS_LOG_INFO ("Installing UDP server on MN");
+  NS_LOG_UNCOND("Installing UDP server on MN");
   uint16_t port = 6000;
-  ApplicationContainer serverApps, clientApps;
+  ApplicationContainer serverApps, clientApps, grpFinder;
+
+  GroupFinderHelper gf;
+  //do settings
+  gf.SetGroup(grpDevs);
+  grpFinder = gf.Install(sta.Get(0));
+//  NS_LOG_UNCOND(grpDevs.Get(0)->GetAddress());
+//  {
+//	  Ptr<GroupFinder> gfApp = sta.Get(0)->GetApplication(0)->GetObject<GroupFinder>();
+//	  if (gfApp)
+//	  {
+//		  NS_LOG_UNCOND("Yes!");
+//
+//		  NS_LOG_UNCOND("NOF Devices: " << gfApp->GetGroup().GetN() );
+//		  NS_LOG_UNCOND(gfApp->GetGroup().Get(0)->GetAddress());
+//		  const NetDeviceContainer &c = gfApp->GetGroup();
+//		  for(uint32_t i = 0; i < c.GetN(); i++)
+//		  {
+//			  Ptr<NetDevice> np = c.Get(i);
+//			  NetDevice &n = *np;
+//			  Address t = n.GetAddress();
+//			  NS_LOG_UNCOND("GroupFinder Finds MAC: " << Mac48Address::ConvertFrom(t));
+//		  }
+//	  }
+//	  else
+//	  {
+//		  NS_LOG_UNCOND("No!");
+//	  }
+//  }
+
   UdpServerHelper server (port);
   serverApps = server.Install (destNode);
 
   //Clinet Application
-  NS_LOG_INFO ("Installing UDP client on CN");
+  NS_LOG_UNCOND("Installing UDP client on CN");
   uint32_t packetSize = 1024;
   uint32_t maxPacketCount = 30;
   Time interPacketInterval = MilliSeconds(1000);
@@ -434,7 +463,9 @@ int main (int argc, char *argv[])
   clientApps.Start (Seconds (startTime + 1.5));
   serverApps.Stop (Seconds (endTime));
   clientApps.Stop (Seconds (endTime));
-
+  grpFinder.Start (Seconds (startTime));
+  grpFinder.Stop (Seconds (endTime));
+  NS_LOG_UNCOND("Applications(1)" << sta.Get(0)->GetApplication(1)->GetTypeId());
   //Anim
   AnimationInterface anim("PMIPv6.xml");
   anim.SetMobilityPollInterval(Seconds(1));

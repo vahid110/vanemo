@@ -346,6 +346,9 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   NS_LOG_UNCOND("HandleNewNode: " << this << "," << from << "," << to << "," << (uint32_t) att <<
 		        " |Sending a message to : " << m_targetAddress );
   NS_LOG_FUNCTION (this << from << to << (uint32_t) att );
+  //Find the STA node(from)
+  //Ask him about the possible dependent nodes
+  //for each of them do the same thing you were doing for the STA node
   
   Ptr<Packet> p = Create<Packet>();
   Pmipv6MagNotifyHeader header;
