@@ -119,10 +119,10 @@ int main (int argc, char *argv[])
   LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 
   double startTime = 0.0;
-  double endTime   = 20.0;
+  double endTime   = 30.0;
   (void) startTime; (void)endTime;
 
-  int cnt = 1;
+  int cnt = 4;
 
   NodeContainer sta;
   NodeContainer grp;

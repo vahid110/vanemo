@@ -29,6 +29,8 @@
 #include "ns3/assert.h"
 #include "ns3/packet.h"
 #include "ns3/node.h"
+#include "ns3/node-list.h"
+#include "ns3/group-finder.h"
 #include "ns3/boolean.h"
 #include "ns3/ipv6-routing-protocol.h"
 #include "ns3/ipv6-route.h"
@@ -346,7 +348,7 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   NS_LOG_UNCOND("HandleNewNode: " << this << "," << from << "," << to << "," << (uint32_t) att <<
 		        " |Sending a message to : " << m_targetAddress );
   NS_LOG_FUNCTION (this << from << to << (uint32_t) att );
-  //Find the STA node(from)
+
   //Ask him about the possible dependent nodes
   //for each of them do the same thing you were doing for the STA node
   
@@ -356,6 +358,41 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   header.SetAccessTechnologyType(att);
   p->AddHeader(header);
   SendMessage (p, Ipv6Address::GetAny (), m_targetAddress, 64);
+  //Find the STA node(from)
+  NodeList::Iterator it = NodeList::Begin();
+  Ptr<Node> sta;
+  for (; it != NodeList::End(); it++)
+  {
+	  if (Mac48Address::ConvertFrom((*it)->GetDevice(1)->GetAddress()) == from)
+	  {
+		   sta = *it;
+		   break;
+	  }
+  }
+
+  if (sta && !rec)
+  {
+	  NS_LOG_UNCOND("NodeId: " << sta->GetId() );
+	  Ptr<GroupFinder> gfApp;
+	  for (uint32_t i = 0; i < sta->GetNApplications() && !gfApp; i++)
+	  {
+		  gfApp = sta->GetApplication(i++)->GetObject<GroupFinder> ();
+	  }
+
+	  if (gfApp)
+	  {
+		  const NetDeviceContainer &c = gfApp->GetGroup();
+		  for(uint32_t i = 0; i < c.GetN(); i++)
+		  {
+			  HandleNewNode(Mac48Address::ConvertFrom(c.Get(i)->GetAddress()),
+					        to, att, true);
+		  }
+	  }
+	  else
+	  {
+		  NS_LOG_WARN("GroupFinder Not Found!");
+	  }
+  }
 }
 
 } /* namespace ns3 */
