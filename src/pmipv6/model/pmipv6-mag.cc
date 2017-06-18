@@ -114,7 +114,7 @@ void Pmipv6Mag::NotifyNewAggregate ()
                 {
                   NS_LOG_INFO ("Installed callback " << i);
                   epc6SgwApp->SetUePrefixCallback (m_setIp);
-                  NS_LOG_UNCOND("Pmipv6Mag::NotifyNewAggregate: epc6SgwApp->SetNewHostCallback(HandleLteNewNode)");
+                  NS_LOG_DEBUG("Pmipv6Mag::NotifyNewAggregate: epc6SgwApp->SetNewHostCallback(HandleLteNewNode)");
                   epc6SgwApp->SetNewHostCallback (MakeCallback (&Pmipv6Mag::HandleLteNewNode, this));
                   m_ifIndex = (int16_t) epc6SgwApp->GetTunnelInterfaceId ();
                   break;
@@ -145,7 +145,7 @@ void Pmipv6Mag::NotifyNewAggregate ()
                           continue;
                         }
 
-                      NS_LOG_UNCOND("Pmipv6Mag::NotifyNewAggregate: rmac->SetNewHostCallback(HandleRegularNewNode)");
+                      NS_LOG_DEBUG("Pmipv6Mag::NotifyNewAggregate: rmac->SetNewHostCallback(HandleRegularNewNode)");
                       rmac->SetNewHostCallback (MakeCallback (&Pmipv6Mag::HandleRegularNewNode, this));
                     }
     //              Ptr<WimaxNetDevice> wDev2 = dev->GetObject<WimaxNetDevice> ();
@@ -160,7 +160,7 @@ void Pmipv6Mag::NotifyNewAggregate ()
             {
               Ptr<Pmipv6MagNotifier> noti = GetNode ()->GetObject<Pmipv6MagNotifier> ();
               NS_ASSERT (noti != 0);
-              NS_LOG_UNCOND("Pmipv6Mag::NotifyNewAggregate: noti->SetNewNodeCallback(HandleRegularNewNode)");
+              NS_LOG_DEBUG("Pmipv6Mag::NotifyNewAggregate: noti->SetNewNodeCallback(HandleRegularNewNode)");
               noti->SetNewNodeCallback (MakeCallback (&Pmipv6Mag::HandleRegularNewNode, this));
             }
           // RADVD Setting
@@ -393,7 +393,7 @@ Ptr<Packet> Pmipv6Mag::BuildHua(BindingUpdateList::Entry *bule, std::list<Ipv6Ad
 
 void Pmipv6Mag::HandleRegularNewNode (Mac48Address from, Mac48Address to, uint8_t att, bool rec)
 {
-  NS_LOG_UNCOND("HandleRegularNewNode: " << this << "," << from << "," << to << "," << (uint32_t) att );
+  NS_LOG_DEBUG("HandleRegularNewNode: " << this << "," << from << "," << to << "," << (uint32_t) att );
   NS_LOG_FUNCTION (this << from << to <<(uint32_t)att);
   NS_ASSERT ( GetProfile() != 0 );
 

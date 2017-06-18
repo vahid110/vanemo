@@ -76,10 +76,6 @@ Ptr<Application>
 GroupFinderHelper::InstallPriv (Ptr<Node> node) const
 {
   Ptr<GroupFinder> app = m_factory.Create<GroupFinder> ();
-  if (!app)
-  {
-	  NS_LOG_UNCOND("*****************************");
-  }
   app->SetGroup(m_devices);
   node->AddApplication (app);
 

@@ -211,7 +211,7 @@ void Pmipv6MagNotifier::NotifyNewAggregate ()
                         {
                           continue;
                         }
-                      NS_LOG_UNCOND("Pmipv6MagNotifier::NotifyNewAggregate: rmac->SetNewHostCallback(HandleNewNode)");
+                      NS_LOG_DEBUG("Pmipv6MagNotifier::NotifyNewAggregate: rmac->SetNewHostCallback(HandleNewNode)");
                       rmac->SetNewHostCallback (MakeCallback (&Pmipv6MagNotifier::HandleNewNode, this));
                       continue;
                     }
@@ -287,7 +287,7 @@ enum IpL4Protocol::RxStatus Pmipv6MagNotifier::Receive (Ptr<Packet> packet, Ipv6
   Pmipv6MagNotifyHeader magNotifyHeader;
   if (!m_newNodeCallback.IsNull ())
     {
-	  NS_LOG_UNCOND("Pmipv6MagNotifier::Receive");
+	  NS_LOG_DEBUG("Pmipv6MagNotifier::Receive");
       p->RemoveHeader(magNotifyHeader);
       m_newNodeCallback (magNotifyHeader.GetMacAddress (),
                          Mac48Address::ConvertFrom (interface->GetDevice ()->GetAddress ()),
@@ -337,7 +337,7 @@ Ipv6Address Pmipv6MagNotifier::GetTargetAddress()
 
 void Pmipv6MagNotifier::SetNewNodeCallback (Callback<void, Mac48Address, Mac48Address, uint8_t, bool> cb)
 {
-  NS_LOG_UNCOND("Pmipv6MagNotifier::SetNewNodeCallback()" );
+  NS_LOG_DEBUG("Pmipv6MagNotifier::SetNewNodeCallback()" );
   NS_LOG_FUNCTION_NOARGS ();
   
   m_newNodeCallback = cb;
@@ -345,7 +345,7 @@ void Pmipv6MagNotifier::SetNewNodeCallback (Callback<void, Mac48Address, Mac48Ad
 
 void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_t att, bool rec)
 {
-  NS_LOG_UNCOND("HandleNewNode: " << this << "," << from << "," << to << "," << (uint32_t) att <<
+  NS_LOG_DEBUG("HandleNewNode: " << this << "," << from << "," << to << "," << (uint32_t) att <<
 		        " |Sending a message to : " << m_targetAddress );
   NS_LOG_FUNCTION (this << from << to << (uint32_t) att );
 
@@ -372,7 +372,7 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
 
   if (sta && !rec)
   {
-	  NS_LOG_UNCOND("NodeId: " << sta->GetId() );
+	  NS_LOG_DEBUG("NodeId: " << sta->GetId() );
 	  Ptr<GroupFinder> gfApp;
 	  for (uint32_t i = 0; i < sta->GetNApplications() && !gfApp; i++)
 	  {

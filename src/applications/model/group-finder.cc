@@ -35,7 +35,7 @@ GroupFinder::GroupFinder ()
 void
 GroupFinder::SetGroup(NetDeviceContainer c)
 {
-	NS_LOG_UNCOND(this << "GroupFinder::SetGroup: " << c.GetN());
+	NS_LOG_DEBUG(this << "GroupFinder::SetGroup: " << c.GetN());
 	m_devices = c;
 }
 
