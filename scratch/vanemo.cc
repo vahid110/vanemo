@@ -55,9 +55,9 @@ Ipv6InterfaceContainer AssignIpv6Address(Ptr<NetDevice> device, Ipv6Address addr
   ifIndex = ipv6->GetInterfaceForDevice (device);
 
   if (ifIndex == -1)
-    {
+  {
       ifIndex = ipv6->AddInterface (device);
-    }
+  }
   NS_ASSERT_MSG (ifIndex >= 0, "Ipv6AddressHelper::Allocate (): "
                  "Interface index not found");
 
@@ -98,9 +98,9 @@ Ipv6InterfaceContainer AssignWithoutAddress(Ptr<NetDevice> device)
 
   ifIndex = ipv6->GetInterfaceForDevice (device);
   if (ifIndex == -1)
-    {
+  {
       ifIndex = ipv6->AddInterface (device);
-    }
+  }
   NS_ASSERT_MSG (ifIndex >= 0, "Ipv6AddressHelper::Allocate (): "
                  "Interface index not found");
 
@@ -160,10 +160,14 @@ int main (int argc, char *argv[])
 //  LogLevel logAll = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_ALL);
 //  LogLevel logLogic = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_LOGIC);
 //  LogLevel logInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO);
-
+    LogLevel logDbg = static_cast<LogLevel>(LOG_LEVEL_DEBUG);
+    (void)logDbg;
 //  LogComponentEnable ("Udp6Server", logInfo);
 //  LogComponentEnable ("Pmipv6Agent", logAll);
 //  LogComponentEnable ("Pmipv6MagNotifier", logAll);
+//  LogComponentEnable ("Pmipv6Wifi", logDbg);
+//  LogComponentEnable ("Pmipv6MagNotifier", logDbg);
+//  LogComponentEnable ("Pmipv6Mag", logDbg);
  
   backbone.Create(cnt + 1);
   aps.Create(cnt);
@@ -277,7 +281,7 @@ int main (int argc, char *argv[])
   mobility.Install (aps);
 
   //Wifi
-  NS_LOG_UNCOND("MAG-AP Addresses");
+  NS_LOG_UNCOND("MAG-AP Addresses:");
   Ssid ssid = Ssid("MAG");
   YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default ();
   wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
@@ -300,15 +304,23 @@ int main (int argc, char *argv[])
 	  std::ostringstream out("");
 	  out << "3ffe:1:" << i+1 << "::1";
 	  magIfs.push_back(AssignIpv6Address(magDevs[i].Get(0), Ipv6Address(out.str().c_str()), 64));
-	  NS_LOG_UNCOND("MAG" << i << " Addresses: " << magIfs[i].GetAddress(0,0) << " and " << magIfs[i].GetAddress(0,1));
+//	  NS_LOG_UNCOND("MAG" << i << " Addresses: " << magIfs[i].GetAddress(0,0) << " and " << magIfs[i].GetAddress(0,1));
 	  out.str("");
 	  magApDevs.push_back(wifi.Install (wifiPhy, wifiMac, magNets[i].Get(1)));
 	  magBrDevs.push_back(bridge.Install (aps.Get(i), NetDeviceContainer(magApDevs[i], magDevs[i].Get(1))));
 	  iifc = AssignWithoutAddress(magDevs[i].Get(1));
-	  NS_LOG_UNCOND("AP" << i << " Mac Addresses: " << magDevs[i].Get(1)->GetAddress());
+//	  NS_LOG_UNCOND("AP" << i << " Mac Addresses: " << magDevs[i].Get(1)->GetAddress());
 	  magIfs[i].Add(iifc);
 	  magIfs[i].SetForwarding(0, true);
 	  magIfs[i].SetDefaultRouteInAllNodes(0);
+  }
+  for (int i = 0; i < cnt; i++)
+  {
+	  NS_LOG_UNCOND("MAG" << i << " Addresses: " << magIfs[i].GetAddress(0,0) << " and " << magIfs[i].GetAddress(0,1));
+  }
+  for (int i = 0; i < cnt; i++)
+  {
+	  NS_LOG_UNCOND("AP" << i << " Mac Addresses: " << magDevs[i].Get(1)->GetAddress());
   }
 
   //STA Mobility
@@ -359,17 +371,16 @@ int main (int argc, char *argv[])
   iifc.SetDefaultRouteInAllNodes (0);
   NS_LOG_UNCOND("STA Routing address:" << iifc.GetAddress (0, 1));
   NS_LOG_UNCOND("Destination Routing address:" << iifc.GetAddress (2, 1));
-//  // manually inject a static route in STA.
-//  Ptr<Ipv6StaticRouting> routing = routingHelper.GetStaticRouting (sta.Get(0)->GetObject<Ipv6> ());
-//  routing->AddHostRouteTo (iifc.GetAddress (2, 0), 0/*iifc.GetAddress (0, 0)*//*, iifc.GetInterfaceIndex (2)*/);
-//  // manually inject a static route in APs.
-//  for (int i = 0; i < cnt; i++)
-//  {
-//	  Ipv6StaticRoutingHelper routingHelper;
-//	  Ptr<Ipv6StaticRouting> routing = routingHelper.GetStaticRouting (aps.Get(i)->GetObject<Ipv6> ());
-//	  routing->AddHostRouteTo (iifc.GetAddress (2, 0), iifc.GetAddress (0, 0), magIfs[i].GetInterfaceIndex(0));
-//  }
-
+  // manually inject a static route in STA.
+  Ptr<Ipv6StaticRouting> routing = routingHelper.GetStaticRouting (sta.Get(0)->GetObject<Ipv6> ());
+  routing->AddHostRouteTo (iifc.GetAddress (2, 0), 0/*iifc.GetAddress (0, 0)*//*, iifc.GetInterfaceIndex (2)*/);
+  // manually inject a static route in APs.
+  for (int i = 0; i < cnt; i++)
+  {
+	  Ipv6StaticRoutingHelper routingHelper;
+	  Ptr<Ipv6StaticRouting> routing = routingHelper.GetStaticRouting (aps.Get(i)->GetObject<Ipv6> ());
+	  routing->AddHostRouteTo (iifc.GetAddress (2, 0), iifc.GetAddress (0, 0), magIfs[i].GetInterfaceIndex(0));
+  }
 
   //LMA Profiling
   Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
@@ -417,33 +428,11 @@ int main (int argc, char *argv[])
   uint16_t port = 6000;
   ApplicationContainer serverApps, clientApps, grpFinder;
 
+  GroupFinderHelper::SetEnable(false);
   GroupFinderHelper gf;
   //do settings
   gf.SetGroup(grpDevs);
   grpFinder = gf.Install(sta.Get(0));
-//  NS_LOG_UNCOND(grpDevs.Get(0)->GetAddress());
-//  {
-//	  Ptr<GroupFinder> gfApp = sta.Get(0)->GetApplication(0)->GetObject<GroupFinder>();
-//	  if (gfApp)
-//	  {
-//		  NS_LOG_UNCOND("Yes!");
-//
-//		  NS_LOG_UNCOND("NOF Devices: " << gfApp->GetGroup().GetN() );
-//		  NS_LOG_UNCOND(gfApp->GetGroup().Get(0)->GetAddress());
-//		  const NetDeviceContainer &c = gfApp->GetGroup();
-//		  for(uint32_t i = 0; i < c.GetN(); i++)
-//		  {
-//			  Ptr<NetDevice> np = c.Get(i);
-//			  NetDevice &n = *np;
-//			  Address t = n.GetAddress();
-//			  NS_LOG_UNCOND("GroupFinder Finds MAC: " << Mac48Address::ConvertFrom(t));
-//		  }
-//	  }
-//	  else
-//	  {
-//		  NS_LOG_UNCOND("No!");
-//	  }
-//  }
 
   UdpServerHelper server (port);
   serverApps = server.Install (destNode);
@@ -465,7 +454,6 @@ int main (int argc, char *argv[])
   clientApps.Stop (Seconds (endTime));
   grpFinder.Start (Seconds (startTime));
   grpFinder.Stop (Seconds (endTime));
-  NS_LOG_UNCOND("Applications(1)" << sta.Get(0)->GetApplication(1)->GetTypeId());
   //Anim
   AnimationInterface anim("PMIPv6.xml");
   anim.SetMobilityPollInterval(Seconds(1));

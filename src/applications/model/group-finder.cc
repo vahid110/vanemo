@@ -18,6 +18,7 @@ NS_LOG_COMPONENT_DEFINE ("GroupFinder");
 
 NS_OBJECT_ENSURE_REGISTERED (GroupFinder);
 
+bool GroupFinder::m_enable = true;
 TypeId
 GroupFinder::GetTypeId (void)
 {
@@ -25,6 +26,18 @@ GroupFinder::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<GroupFinder> ();
   return tid;
+}
+
+void
+GroupFinder::SetEnable(bool value)
+{
+	m_enable = value;
+}
+
+bool
+GroupFinder::IsEnabled()
+{
+	return m_enable;
 }
 
 GroupFinder::GroupFinder ()

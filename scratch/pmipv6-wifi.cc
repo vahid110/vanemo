@@ -299,6 +299,14 @@ int main (int argc, char *argv[])
   wifiMac.SetType ("ns3::StaWifiMac",
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
+
+//  wifiMac.SetType ("ns3::AdhocWifiMac");
+
+
+//    wifiMac.SetType ("ns3::ApWifiMac",
+//                     "Ssid", SsidValue (ssid));
+
+
   staDevs.Add( wifi.Install (wifiPhy, wifiMac, sta));
 
   iifc = AssignWithoutAddress(staDevs.Get(0)); 

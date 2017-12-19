@@ -26,6 +26,19 @@
 
 namespace ns3 {
 
+
+void
+GroupFinderHelper::SetEnable(bool value)
+{
+	GroupFinder::SetEnable(value);
+}
+
+bool
+GroupFinderHelper::IsEnabled()
+{
+	return GroupFinder::IsEnabled();
+}
+
 GroupFinderHelper::GroupFinderHelper (/*Ipv6Address address, uint16_t port*/)
 {
   m_factory.SetTypeId (GroupFinder::GetTypeId ());

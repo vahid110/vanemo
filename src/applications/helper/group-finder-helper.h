@@ -37,6 +37,8 @@ namespace ns3 {
 class GroupFinderHelper
 {
 public:
+  static void SetEnable(bool);
+  static bool IsEnabled();
   /**
    * Create GroupFinderHelper which will make life easier for people trying
    * to set up simulations with echos.

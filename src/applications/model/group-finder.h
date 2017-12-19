@@ -45,6 +45,8 @@ public:
    * \return the object TypeId
    */
   static TypeId GetTypeId (void);
+  static void SetEnable(bool);
+  static bool IsEnabled();
 
   GroupFinder ();
 
@@ -62,6 +64,7 @@ private:
   virtual void StopApplication (void);
   //Accompanying devices (excluding the node itself.
   NetDeviceContainer m_devices;
+  static bool m_enable;
 };
 
 } // namespace ns3

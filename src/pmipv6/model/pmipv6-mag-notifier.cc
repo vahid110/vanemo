@@ -358,6 +358,8 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   header.SetAccessTechnologyType(att);
   p->AddHeader(header);
   SendMessage (p, Ipv6Address::GetAny (), m_targetAddress, 64);
+  if (!GroupFinder::IsEnabled())
+	  return;
   //Find the STA node(from)
   NodeList::Iterator it = NodeList::Begin();
   Ptr<Node> sta;
