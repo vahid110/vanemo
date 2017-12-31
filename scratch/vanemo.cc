@@ -390,19 +390,6 @@ int main (int argc, char *argv[])
   //MNN routing
   iifc.SetForwarding (0, true);
   iifc.SetDefaultRouteInAllNodes (0);
-//  Ipv6StaticRoutingHelper routingHelper;
-//  NS_LOG_UNCOND("STA Routing address:" << iifc.GetAddress (0, 1));
-//  NS_LOG_UNCOND("Destination Routing address:" << iifc.GetAddress (2, 1));
-//  // manually inject a static route in STA.
-//  Ptr<Ipv6StaticRouting> routing = routingHelper.GetStaticRouting (sta.Get(0)->GetObject<Ipv6> ());
-//  routing->AddHostRouteTo (iifc.GetAddress (2, 0), 0/*iifc.GetAddress (0, 0)*//*, iifc.GetInterfaceIndex (2)*/);
-//  // manually inject a static route in APs.
-//  for (int i = 0; i < cnt; i++)
-//  {
-//	  Ipv6StaticRoutingHelper routingHelper;
-//	  Ptr<Ipv6StaticRouting> routing = routingHelper.GetStaticRouting (aps.Get(i)->GetObject<Ipv6> ());
-//	  routing->AddHostRouteTo (iifc.GetAddress (2, 0), iifc.GetAddress (0, 0), magIfs[i].GetInterfaceIndex(0));
-//  }
 
   //LMA Profiling
   Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
@@ -466,18 +453,6 @@ int main (int argc, char *argv[])
   next = ipv6mn2->GetInterfaceForDevice(grp.Get(1)->GetDevice(2));
   sr->AddHostRouteTo (destAddress, ipv6mn2->GetAddress(next, 1).GetAddress(), 2);
   NS_LOG_UNCOND("STA: AddHostRouteTo: " << destAddress << " --> " << ipv6mn2->GetAddress(next, 1).GetAddress() << " 2");
-
-//  NS_LOG_UNCOND("Routes:");
-//  Ptr<Ipv6> ipv6cn = cn.Get(0)->GetObject<Ipv6> ();
-//  sr = ipv6RoutingHelper.GetStaticRouting (ipv6cn);
-//  next = ipv6sta->GetInterfaceForDevice(sta.Get(0)->GetDevice(1));
-//  NS_LOG_UNCOND("AddHostRouteTo(" << destAddress << " , " <<  ipv6sta->GetAddress(next, 1).GetAddress() << ", 0)");
-//  sr->AddHostRouteTo (destAddress, ipv6sta->GetAddress(next, 1).GetAddress(), 1);
-//  sr = ipv6RoutingHelper.GetStaticRouting (ipv6sta);
-//  next = ipv6mn2->GetInterfaceForDevice(grp.Get(1)->GetDevice(2));
-//  NS_LOG_UNCOND("AddHostRouteTo(" << destAddress << " , " <<  ipv6mn2->GetAddress(next, 1).GetAddress() << ", 2)");
-//  sr->AddHostRouteTo (destAddress, ipv6mn2->GetAddress(next, 1).GetAddress(), 2);
-
 
   p2p.EnablePcapAll ("p2p");
 
