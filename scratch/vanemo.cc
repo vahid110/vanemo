@@ -341,6 +341,28 @@ void initAnim(AnimationInterface &anim)
 	}
 }
 
+void initPmip()
+{
+	Ptr<Pmipv6ProfileHelper> profile = enableLMAProfiling();
+	enableLMAProfiling();
+
+	//LMA Helper
+	NS_LOG_UNCOND("LMA Helper");
+	Pmipv6LmaHelper lmahelper;
+	lmahelper.SetPrefixPoolBase(Ipv6Address("3ffe:1:4::"), 48);
+	lmahelper.SetProfileHelper(profile);
+	lmahelper.Install(lma.Get(0));
+
+	//MAG Helper
+	NS_LOG_UNCOND("MAG Helper");
+	Pmipv6MagHelper maghelper;
+	maghelper.SetProfileHelper(profile);
+	for (int i = 0; i < backBoneCnt; i++)
+	{
+	  maghelper.Install (mags.Get(i), magIfs[i].GetAddress(0, 0), aps.Get(i));
+	}
+}
+
 int main (int argc, char *argv[])
 {
   (void) startTime; (void)endTime;
@@ -495,25 +517,8 @@ int main (int argc, char *argv[])
   NS_LOG_UNCOND("GL Address:" << glAddress);
   NS_LOG_UNCOND("Mnn2 Address:" << mnn2Address);
   NS_LOG_UNCOND("Dest Address:" << destAddress);
-
-  Ptr<Pmipv6ProfileHelper> profile = enableLMAProfiling();
-  enableLMAProfiling();
-
-  //LMA Helper
-  NS_LOG_UNCOND("LMA Helper");
-  Pmipv6LmaHelper lmahelper;
-  lmahelper.SetPrefixPoolBase(Ipv6Address("3ffe:1:4::"), 48);
-  lmahelper.SetProfileHelper(profile);
-  lmahelper.Install(lma.Get(0));
   
-  //MAG Helper
-  NS_LOG_UNCOND("MAG Helper");
-  Pmipv6MagHelper maghelper;
-  maghelper.SetProfileHelper(profile);
-  for (int i = 0; i < backBoneCnt; i++)
-  {
-	  maghelper.Install (mags.Get(i), magIfs[i].GetAddress(0, 0), aps.Get(i));
-  }
+  initPmip();
   
   //P2P
   NS_LOG_UNCOND("P2P");
