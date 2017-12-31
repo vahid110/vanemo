@@ -183,6 +183,11 @@ void printMnnsDeviceInfor(const std::string &preface)
 }
 
 const int backBoneCnt = 4;
+const double startTime = 0.0;
+const double endTime   = 30.0;
+Ipv6Address destAddress;
+Ptr<Node> destNode;
+
 void createNodes()
 {
 	  lmaMagNodes.Create(backBoneCnt + 1);
@@ -275,8 +280,6 @@ void initMnnMobility()
 int main (int argc, char *argv[])
 {
 
-  double startTime = 0.0;
-  double endTime   = 30.0;
   (void) startTime; (void)endTime;
 
   CommandLine cmd;
@@ -421,12 +424,14 @@ int main (int argc, char *argv[])
   Ipv6Address staAddress = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
   Ipv6Address mnn2Address = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
 
+//  destAddress = staAddress;
+//  destNode = sta.Get(0);
+  destAddress = mnn2Address;
+  destNode = grp.Get(1);
+
   NS_LOG_UNCOND("STA Address:" << staAddress);
   NS_LOG_UNCOND("Mnn2 Address:" << mnn2Address);
-//  Ipv6Address &destAddress = staAddress;
-//  Ptr<Node> destNode = sta.Get(0);
-  Ipv6Address &destAddress = mnn2Address;
-  Ptr<Node> destNode = grp.Get(1);
+  NS_LOG_UNCOND("Dest Address:" << destAddress);
 
   Ptr<Pmipv6ProfileHelper> profile = enableLMAProfiling();
   enableLMAProfiling();
@@ -497,8 +502,6 @@ int main (int argc, char *argv[])
 //  csmaLmaMag.EnablePcapAll (std::string ("pmip6-csmaLmaMag"), false);
   csmaLmaMag.EnablePcap(std::string ("csma-lma-mag"), lmaMagDevs, false);
   csmaLmaMag.EnablePcap(std::string ("csma-lma-cn"), lmaCnDevs, false);
-
-
 
   for (int i = 0; i < backBoneCnt; i++)
   {
