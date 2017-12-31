@@ -376,9 +376,12 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   {
 	  NS_LOG_DEBUG("GL is: " << gl->GetId() );
 	  Ptr<GroupFinder> gfApp;
-	  for (uint32_t i = 0; i < gl->GetNApplications() && !gfApp; i++)
+	  for (uint32_t i = 0; i < gl->GetNApplications(); i++)
 	  {
-		  gfApp = gl->GetApplication(i++)->GetObject<GroupFinder> ();
+		  gfApp = gl->GetApplication(i)->GetObject<GroupFinder> ();
+
+		  if (gfApp)
+			  break;
 	  }
 
 	  if (gfApp)
