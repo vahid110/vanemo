@@ -174,70 +174,46 @@ void printMnnsDeviceInfor(const std::string &preface)
 	  NS_LOG_UNCOND("MN2  Devices:" << grp.Get(1)->GetNDevices() << " Interfaces:" << grp.Get(1)->GetObject<Ipv4> ()->GetNInterfaces());
 }
 
-
-int main (int argc, char *argv[])
+const int cnt = 4;
+void createNodes()
 {
-  LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
-  LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
+	  lmaMagNodes.Create(cnt + 1);
+	  aps.Create(cnt);
+	  cn.Create(1);
+	  sta.Create(1);
+	  grp.Create(2);
 
-  double startTime = 0.0;
-  double endTime   = 30.0;
-  (void) startTime; (void)endTime;
+	  lma.Add(lmaMagNodes.Get(0));
 
-  int cnt = 4;
-  
-  CommandLine cmd;
-  cmd.Parse (argc, argv);
-  
-  SeedManager::SetSeed (123456);
-//  LogLevel logAll = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_ALL);
-//  LogLevel logLogic = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_LOGIC);
-//  LogLevel logInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO);
-    LogLevel logDbg = static_cast<LogLevel>(LOG_LEVEL_DEBUG);
-    (void)logDbg;
-//  LogComponentEnable ("Udp6Server", logInfo);
-//  LogComponentEnable ("Pmipv6Agent", logAll);
-//  LogComponentEnable ("Pmipv6MagNotifier", logAll);
-//  LogComponentEnable ("Pmipv6Wifi", logDbg);
-//  LogComponentEnable ("Pmipv6MagNotifier", logDbg);
-//  LogComponentEnable ("Pmipv6Mag", logDbg);
- 
-  lmaMagNodes.Create(cnt + 1);
-  aps.Create(cnt);
-  cn.Create(1);
-  sta.Create(1);
-  grp.Create(2);
+	  for (int i = 0; i < cnt; i++)
+	  {
+		  mags.Add(lmaMagNodes.Get(i + 1));
+	  }
 
-  InternetStackHelper internet;
-  internet.Install (lmaMagNodes);
-  internet.Install (aps);
-  internet.Install (cn);
-  internet.Install (sta);
-  internet.Install (grp);
-  //printMnnsDeviceInfor("INT");
+	  lmaCnNodes.Add(lma);
+	  lmaCnNodes.Add(cn);
 
-  lma.Add(lmaMagNodes.Get(0));
-  
-  for (int i = 0; i < cnt; i++)
-  {
-	  mags.Add(lmaMagNodes.Get(i + 1));
-  }
-  
-  lmaCnNodes.Add(lma);
-  lmaCnNodes.Add(cn);
+	  for (int i = 0; i < cnt; i++)
+	  {
+		  NodeContainer magApPair;
+		  magApPair.Add(mags.Get(i));
+		  magApPair.Add(aps.Get(i));
+		  magApPairNodes.push_back(magApPair);
+	  }
+}
 
-  for (int i = 0; i < cnt; i++)
-  {
-	  NodeContainer magApPair;
-	  magApPair.Add(mags.Get(i));
-	  magApPair.Add(aps.Get(i));
-	  magApPairNodes.push_back(magApPair);
-  }
+void installInternetStack()
+{
+	  InternetStackHelper internet;
+	  internet.Install (lmaMagNodes);
+	  internet.Install (aps);
+	  internet.Install (cn);
+	  internet.Install (sta);
+	  internet.Install (grp);
+}
 
-  CsmaHelper csmaLmaMag, csmaLmaCn;
-  //MAC Address for MAGs
-  std::vector<Mac48Address> magMacAddrs;
-  NS_LOG_UNCOND("MAC Addresses:");
+void assignMagMacAddresses()
+{
   for (int i = 0; i < cnt; i++)
   {
 	  std::ostringstream out("");
@@ -248,15 +224,39 @@ int main (int argc, char *argv[])
 	  magMacAddrs.push_back(magMacAddr);
 	  out.str("");
   }
+}
+
+void initCsma(CsmaHelper &csma, uint64_t dataRateBps = 50000000, int64_t delay = 100, uint64_t mtu = 1400)
+{
+  csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate(50000000)));
+  csma.SetChannelAttribute ("Delay", TimeValue (MicroSeconds(100)));
+  csma.SetDeviceAttribute ("Mtu", UintegerValue (1400));
+}
+
+int main (int argc, char *argv[])
+{
+
+  double startTime = 0.0;
+  double endTime   = 30.0;
+  (void) startTime; (void)endTime;
+
+  CommandLine cmd;
+  cmd.Parse (argc, argv);
   logSettings();
+  SeedManager::SetSeed (123456);
+
+  createNodes();
+  installInternetStack();
+  NS_LOG_UNCOND("MAC Addresses:");
+  assignMagMacAddresses();
+
+  CsmaHelper csmaLmaCn;
+  initCsma(csmaLmaCn);
 
   Ipv6InterfaceContainer iifc;
   NS_LOG_UNCOND("Outer Network:");
   //Outer Dev CSMA and Addressing
   //Link between CN and LMA is 50Mbps and 0.1ms delay
-  csmaLmaCn.SetChannelAttribute ("DataRate", DataRateValue (DataRate(50000000)));
-  csmaLmaCn.SetChannelAttribute ("Delay", TimeValue (MicroSeconds(100)));
-  csmaLmaCn.SetDeviceAttribute ("Mtu", UintegerValue (1400));
   lmaCnDevs = csmaLmaCn.Install(lmaCnNodes);
   iifc = AssignIpv6Address(lmaCnDevs.Get(0), Ipv6Address("3ffe:2::1"), 64);
   outerIfs.Add(iifc);
@@ -264,12 +264,9 @@ int main (int argc, char *argv[])
   outerIfs.Add(iifc);
   outerIfs.SetForwarding(0, true);
   outerIfs.SetDefaultRouteInAllNodes(0);
-
+  CsmaHelper csmaLmaMag;
+  initCsma(csmaLmaMag);
   //All Link is 50Mbps and 0.1ms delay
-  csmaLmaMag.SetChannelAttribute ("DataRate", DataRateValue (DataRate(50000000)));
-  csmaLmaMag.SetChannelAttribute ("Delay", TimeValue (MicroSeconds(100)));
-  csmaLmaMag.SetDeviceAttribute ("Mtu", UintegerValue (1400));
-
   //Backbone Addressing
   NS_LOG_UNCOND("Assign lmaMagNodes Addresses");
   lmaMagDevs = csmaLmaMag.Install(lmaMagNodes);
