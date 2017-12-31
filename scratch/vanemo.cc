@@ -142,7 +142,7 @@ void installConstantMobility(NodeContainer &nc, Ptr<ListPositionAllocator> posit
 
 namespace containers
 {
-	NodeContainer sta;
+	NodeContainer gl;
 	NodeContainer grp;
 	NodeContainer cn;
 	NodeContainer lmaMagNodes;
@@ -162,7 +162,7 @@ namespace containers
 	std::vector<NetDeviceContainer> apDevs;
 	std::vector<NetDeviceContainer> magBrDevs;
 
-	NetDeviceContainer staDevs;
+	NetDeviceContainer glDevs;
 	NetDeviceContainer grpDevs;
 
 	Ipv6InterfaceContainer backboneIfs;
@@ -170,14 +170,14 @@ namespace containers
 
 	std::vector<Ipv6InterfaceContainer> magIfs;
 
-	Ipv6InterfaceContainer staIfs;
+	Ipv6InterfaceContainer glIfs;
 	Ipv6InterfaceContainer grpIfs;
 }
 using namespace containers;
 
 void printMnnsDeviceInfor(const std::string &preface)
 {
-	  NS_LOG_UNCOND(preface << ".\nSTA  Devices:" << sta.Get(0)->GetNDevices() << " Interfaces:" << sta.Get(0)->GetObject<Ipv4> ()->GetNInterfaces());
+	  NS_LOG_UNCOND(preface << ".\nSTA  Devices:" << gl.Get(0)->GetNDevices() << " Interfaces:" << gl.Get(0)->GetObject<Ipv4> ()->GetNInterfaces());
 	  NS_LOG_UNCOND("MN1  Devices:" << grp.Get(0)->GetNDevices() << " Interfaces:" << grp.Get(0)->GetObject<Ipv4> ()->GetNInterfaces());
 	  NS_LOG_UNCOND("MN2  Devices:" << grp.Get(1)->GetNDevices() << " Interfaces:" << grp.Get(1)->GetObject<Ipv4> ()->GetNInterfaces());
 }
@@ -193,7 +193,7 @@ void createNodes()
 	  lmaMagNodes.Create(backBoneCnt + 1);
 	  aps.Create(backBoneCnt);
 	  cn.Create(1);
-	  sta.Create(1);
+	  gl.Create(1);
 	  grp.Create(2);
 
 	  lma.Add(lmaMagNodes.Get(0));
@@ -221,7 +221,7 @@ void installInternetStack()
 	  internet.Install (lmaMagNodes);
 	  internet.Install (aps);
 	  internet.Install (cn);
-	  internet.Install (sta);
+	  internet.Install (gl);
 	  internet.Install (grp);
 }
 
@@ -250,7 +250,7 @@ Ptr<Pmipv6ProfileHelper> enableLMAProfiling()
 {
 	//LMA Profiling
 	Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
-	profile->AddProfile(Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+	profile->AddProfile(Identifier(Mac48Address::ConvertFrom(glDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(glDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
 	for(unsigned int i = 0; i < grpDevs.GetN(); i++)
 	{
 	  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(i)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(i)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
@@ -262,10 +262,10 @@ void initMnnMobility()
 {
 	MobilityHelper mobility;
 	Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-	positionAlloc->Add (Vector (-50.0, 50.0, 0.0)); //STA
+	positionAlloc->Add (Vector (-50.0, 50.0, 0.0)); //GL
 	mobility.SetPositionAllocator (positionAlloc);
 	mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
-	mobility.Install(sta);
+	mobility.Install(gl);
 	positionAlloc = CreateObject<ListPositionAllocator> ();
 
 	for(unsigned int i = 0; i < grp.GetN(); i++)
@@ -273,7 +273,7 @@ void initMnnMobility()
 		  positionAlloc->Add (Vector (-20.0, (i*10) + 20.0, 0.0)); //MNNs
 	}
 	mobility.SetPositionAllocator (positionAlloc);
-	mobility.PushReferenceMobilityModel(sta.Get (0));
+	mobility.PushReferenceMobilityModel(gl.Get (0));
 	mobility.Install(grp);
 }
 
@@ -286,7 +286,7 @@ void initGrpFinder()
 	GroupFinderHelper gf;
 	//do settings
 	gf.SetGroup(grpDevs);
-	grpFinder = gf.Install(sta.Get(0));
+	grpFinder = gf.Install(gl.Get(0));
 	grpFinder.Start (Seconds (startTime));
 	grpFinder.Stop (Seconds (endTime));
 }
@@ -433,25 +433,25 @@ int main (int argc, char *argv[])
 
   NS_LOG_UNCOND ("Create networks and assign MNN Addresses.");
 
-  //STA movement
-  Ptr<ConstantVelocityMobilityModel> cvm = sta.Get(0)->GetObject<ConstantVelocityMobilityModel>();
+  //GL movement
+  Ptr<ConstantVelocityMobilityModel> cvm = gl.Get(0)->GetObject<ConstantVelocityMobilityModel>();
   cvm->SetVelocity(Vector (10.0, 0, 0)); //move to left to right 10.0m/s
-  //STA Wifi
+  //GL Wifi
   wifiMac.SetType ("ns3::StaWifiMac",
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
   //printMnnsDeviceInfor("WIS");
 
-  staDevs.Add( wifi.Install (wifiPhy, wifiMac, sta));
+  glDevs.Add( wifi.Install (wifiPhy, wifiMac, gl));
   //printMnnsDeviceInfor("WIS_");
-  NS_LOG_UNCOND("STA Mac Addresses: " << staDevs.Get(0)->GetAddress());
+  NS_LOG_UNCOND("GL Mac Addresses: " << glDevs.Get(0)->GetAddress());
 
   //printMnnsDeviceInfor("WIG");
 
   //Mobile Addressing
   grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
   //printMnnsDeviceInfor("WIG");
-  NetDeviceContainer mnnDevs(staDevs, grpDevs);
+  NetDeviceContainer mnnDevs(glDevs, grpDevs);
   iifc = AssignIpv6Address(mnnDevs);
   //MNN routing
   iifc.SetForwarding (0, true);
@@ -459,15 +459,15 @@ int main (int argc, char *argv[])
   //printMnnsDeviceInfor("ASG");
 
   //End addresses
-  Ipv6Address staAddress = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
+  Ipv6Address glAddress = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
   Ipv6Address mnn2Address = mnnDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
 
-//  destAddress = staAddress;
-//  destNode = sta.Get(0);
+//  destAddress = glAddress;
+//  destNode = gl.Get(0);
   destAddress = mnn2Address;
   destNode = grp.Get(1);
 
-  NS_LOG_UNCOND("STA Address:" << staAddress);
+  NS_LOG_UNCOND("GL Address:" << glAddress);
   NS_LOG_UNCOND("Mnn2 Address:" << mnn2Address);
   NS_LOG_UNCOND("Dest Address:" << destAddress);
 
@@ -496,12 +496,12 @@ int main (int argc, char *argv[])
   PointToPointHelper p2p;
   p2p.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
   p2p.SetChannelAttribute ("Delay", StringValue ("2ms"));
-  NodeContainer p2pNodes(sta, grp.Get(1));
+  NodeContainer p2pNodes(gl, grp.Get(1));
   NetDeviceContainer p2pDevs = p2p.Install(p2pNodes);
   printMnnsDeviceInfor("P2P Install");
-  Ptr<Ipv6> ipv6sta = sta.Get(0)->GetObject<Ipv6> ();
-  int32_t staP2pIfx = ipv6sta->AddInterface(p2pDevs.Get(0));
-  (void)staP2pIfx;
+  Ptr<Ipv6> ipv6gl = gl.Get(0)->GetObject<Ipv6> ();
+  int32_t glP2pIfx = ipv6gl->AddInterface(p2pDevs.Get(0));
+  (void)glP2pIfx;
 
   Ptr<Ipv6> ipv6mn2 = grp.Get(1)->GetObject<Ipv6> ();
   int32_t mn2P2pIfx = ipv6mn2->AddInterface(p2pDevs.Get(1));
@@ -510,27 +510,27 @@ int main (int argc, char *argv[])
   AssignIpv6Address(p2pDevs, Ipv6Address("3ffe:4:4:4::"), 64);
   printMnnsDeviceInfor("P2P Assign");
   NS_LOG_UNCOND("P2P Addresses:");
-  int32_t t = ipv6sta->GetInterfaceForDevice(sta.Get(0)->GetDevice(2));
+  int32_t t = ipv6gl->GetInterfaceForDevice(gl.Get(0)->GetDevice(2));
   int32_t t1 = ipv6mn2->GetInterfaceForDevice(grp.Get(1)->GetDevice(2));
-  NS_LOG_UNCOND(ipv6sta->GetAddress(t, 1).GetAddress() << " --> " << ipv6mn2->GetAddress(t1, 1).GetAddress());
+  NS_LOG_UNCOND(ipv6gl->GetAddress(t, 1).GetAddress() << " --> " << ipv6mn2->GetAddress(t1, 1).GetAddress());
 
   // Routes
   Ipv6StaticRoutingHelper ipv6RoutingHelper;
   Ptr<Ipv6StaticRouting> sr;
   int32_t next;
-  next = ipv6sta->GetInterfaceForDevice(sta.Get(0)->GetDevice(1));
+  next = ipv6gl->GetInterfaceForDevice(gl.Get(0)->GetDevice(1));
   for (int i = 1; i <= backBoneCnt; i++)
   {
 	  Ptr<Ipv6> ipv6mag =   lmaMagNodes.Get(i)->GetObject<Ipv6> ();
 	  sr = ipv6RoutingHelper.GetStaticRouting (ipv6mag);
-	  sr->AddHostRouteTo (destAddress, ipv6sta->GetAddress(next, 1).GetAddress(), 2);
-	  NS_LOG_UNCOND("MAG" << i << ": AddHostRouteTo: " << destAddress << " --> " << ipv6sta->GetAddress(next, 1).GetAddress() << " 2");
+	  sr->AddHostRouteTo (destAddress, ipv6gl->GetAddress(next, 1).GetAddress(), 2);
+	  NS_LOG_UNCOND("MAG" << i << ": AddHostRouteTo: " << destAddress << " --> " << ipv6gl->GetAddress(next, 1).GetAddress() << " 2");
   }
 
-  sr = ipv6RoutingHelper.GetStaticRouting (ipv6sta);
+  sr = ipv6RoutingHelper.GetStaticRouting (ipv6gl);
   next = ipv6mn2->GetInterfaceForDevice(grp.Get(1)->GetDevice(2));
   sr->AddHostRouteTo (destAddress, ipv6mn2->GetAddress(next, 1).GetAddress(), 2);
-  NS_LOG_UNCOND("STA: AddHostRouteTo: " << destAddress << " --> " << ipv6mn2->GetAddress(next, 1).GetAddress() << " 2");
+  NS_LOG_UNCOND("GL: AddHostRouteTo: " << destAddress << " --> " << ipv6mn2->GetAddress(next, 1).GetAddress() << " 2");
 
   p2p.EnablePcapAll ("p2p");
 
@@ -547,7 +547,7 @@ int main (int argc, char *argv[])
 	  csmaLmaMag.EnablePcap("csma-mag->ap", magApPairDevs[i].Get(0));
 	  csmaLmaMag.EnablePcap("csma-ap", magApPairDevs[i].Get(1));
   }
-  wifiPhy.EnablePcap ("wifi-sta", staDevs.Get(0));
+  wifiPhy.EnablePcap ("wifi-gl", glDevs.Get(0));
   wifiPhy.EnablePcap ("wifi-mnn", mnnDevs.Get(2));
 
   NS_LOG_UNCOND("Installing GRP FINDER");
@@ -560,7 +560,7 @@ int main (int argc, char *argv[])
   anim.SetMobilityPollInterval(Seconds(1));
   anim.UpdateNodeDescription(lmaMagNodes.Get(0), "LMA");
   anim.UpdateNodeDescription(cn.Get(0), "CN");
-  anim.UpdateNodeDescription(sta.Get(0), "MNN");
+  anim.UpdateNodeDescription(gl.Get(0), "MNN");
   for (int i = 0; i < backBoneCnt; i++)
   {
 	  std::ostringstream out("");
