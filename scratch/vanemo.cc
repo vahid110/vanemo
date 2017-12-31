@@ -254,6 +254,25 @@ Ptr<Pmipv6ProfileHelper> enableLMAProfiling()
 	return profile;
 }
 
+void initMnnMobility()
+{
+	MobilityHelper mobility;
+	Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
+	positionAlloc->Add (Vector (-50.0, 50.0, 0.0)); //STA
+	mobility.SetPositionAllocator (positionAlloc);
+	mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
+	mobility.Install(sta);
+	positionAlloc = CreateObject<ListPositionAllocator> ();
+
+	for(unsigned int i = 0; i < grp.GetN(); i++)
+	{
+		  positionAlloc->Add (Vector (-20.0, (i*10) + 20.0, 0.0)); //MNNs
+	}
+	mobility.SetPositionAllocator (positionAlloc);
+	mobility.PushReferenceMobilityModel(sta.Get (0));
+	mobility.Install(grp);
+}
+
 int main (int argc, char *argv[])
 {
 
@@ -359,23 +378,18 @@ int main (int argc, char *argv[])
 	  magIfs[i].SetForwarding(0, true);
 	  magIfs[i].SetDefaultRouteInAllNodes(0);
   }
-  for (int i = 0; i < backBoneCnt; i++)
-  {
-	  NS_LOG_UNCOND("MAG" << i << " Addresses: " << magIfs[i].GetAddress(0,0) << " and " << magIfs[i].GetAddress(0,1));
-  }
-  for (int i = 0; i < backBoneCnt; i++)
-  {
-	  NS_LOG_UNCOND("AP" << i << " Mac Addresses: " << magApPairDevs[i].Get(1)->GetAddress());
-  }
 
-  //STA Mobility
-  MobilityHelper mobility;
+  std::ostringstream magOut(""), apOut("");
+  for (int i = 0; i < backBoneCnt; i++)
+  {
+	  magOut << "MAG" << i << " Addresses: " << magIfs[i].GetAddress(0,0) << " and " << magIfs[i].GetAddress(0,1) << "\n";
+	  apOut << "AP" << i << " Mac Addresses: " << magApPairDevs[i].Get(1)->GetAddress() << "\n";
+  }
+  NS_LOG_UNCOND (magOut.str() << apOut.str() );
+
+  initMnnMobility();
+
   NS_LOG_UNCOND ("Create networks and assign MNN Addresses.");
-  positionAlloc = CreateObject<ListPositionAllocator> ();
-  positionAlloc->Add (Vector (-50.0, 50.0, 0.0)); //STA
-  mobility.SetPositionAllocator (positionAlloc);
-  mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");  
-  mobility.Install(sta);
 
   //STA movement
   Ptr<ConstantVelocityMobilityModel> cvm = sta.Get(0)->GetObject<ConstantVelocityMobilityModel>();
@@ -390,16 +404,6 @@ int main (int argc, char *argv[])
   //printMnnsDeviceInfor("WIS_");
   NS_LOG_UNCOND("STA Mac Addresses: " << staDevs.Get(0)->GetAddress());
 
-  //MNNs Mobility
-  positionAlloc = CreateObject<ListPositionAllocator> ();
-
-  for(unsigned int i = 0; i < grp.GetN(); i++)
-  {
-	  positionAlloc->Add (Vector (-20.0, (i*10) + 20.0, 0.0)); //MNNs
-  }
-  mobility.SetPositionAllocator (positionAlloc);
-  mobility.PushReferenceMobilityModel(sta.Get (0));
-  mobility.Install(grp);
   //printMnnsDeviceInfor("WIG");
 
   //Mobile Addressing
