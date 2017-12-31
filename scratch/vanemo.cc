@@ -234,12 +234,11 @@ void assignMagMacAddresses()
   }
 }
 
-NetDeviceContainer initCsma(CsmaHelper &csma, NodeContainer &nc, uint64_t dataRateBps = 50000000, int64_t delay = 100, uint64_t mtu = 1400)
+void initCsma(CsmaHelper &csma, uint64_t dataRateBps = 50000000, int64_t delay = 100, uint64_t mtu = 1400)
 {
-  csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate(dataRateBps)));
-  csma.SetChannelAttribute ("Delay", TimeValue (MicroSeconds(delay)));
-  csma.SetDeviceAttribute ("Mtu", UintegerValue (mtu));
-  return csma.Install(nc);
+  csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate(50000000)));
+  csma.SetChannelAttribute ("Delay", TimeValue (MicroSeconds(100)));
+  csma.SetDeviceAttribute ("Mtu", UintegerValue (1400));
 }
 
 Ptr<Pmipv6ProfileHelper> enableLMAProfiling()
@@ -292,12 +291,13 @@ int main (int argc, char *argv[])
 
   NS_LOG_UNCOND("Outer Network:");
   CsmaHelper csmaLmaCn;
-  lmaCnDevs = initCsma(csmaLmaCn, lmaCnNodes);
+  initCsma(csmaLmaCn);
 
   Ipv6InterfaceContainer iifc;
 
   //Outer Dev CSMA and Addressing
   //Link between CN and LMA is 50Mbps and 0.1ms delay
+  lmaCnDevs = csmaLmaCn.Install(lmaCnNodes);
   iifc = AssignIpv6Address(lmaCnDevs.Get(0), Ipv6Address("3ffe:2::1"), 64);
   outerIfs.Add(iifc);
   iifc = AssignIpv6Address(lmaCnDevs.Get(1), Ipv6Address("3ffe:2::2"), 64);
@@ -307,10 +307,11 @@ int main (int argc, char *argv[])
 
   NS_LOG_UNCOND("LMA MAG Network:");
   CsmaHelper csmaLmaMag;
-  initCsma(csmaLmaMag, lmaMagNodes);
+  initCsma(csmaLmaMag);
   //All Link is 50Mbps and 0.1ms delay
   //Backbone Addressing
   NS_LOG_UNCOND("Assign lmaMagNodes Addresses");
+  lmaMagDevs = csmaLmaMag.Install(lmaMagNodes);
   for (int i = 0; i <= backBoneCnt; i++)
   {
 	  std::ostringstream out("");
