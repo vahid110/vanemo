@@ -510,10 +510,7 @@ int main (int argc, char *argv[])
   wifiPhy.EnablePcap ("wifi-mnn", mnnDevs.Get(2));
 
   //Server Application
-
-  NS_LOG_UNCOND("Installing UDP server on MN");
-  uint16_t port = 6000;
-  ApplicationContainer serverApps, clientApps, grpFinder;
+  ApplicationContainer grpFinder;
 
   GroupFinderHelper::SetEnable(true);
   GroupFinderHelper gf;
@@ -521,6 +518,9 @@ int main (int argc, char *argv[])
   gf.SetGroup(grpDevs);
   grpFinder = gf.Install(sta.Get(0));
 
+  NS_LOG_UNCOND("Installing UDP server on MN");
+  uint16_t port = 6000;
+  ApplicationContainer serverApps, clientApps;
   UdpServerHelper server (port);
   serverApps = server.Install (destNode);
 
