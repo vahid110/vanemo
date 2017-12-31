@@ -44,38 +44,6 @@ NS_LOG_COMPONENT_DEFINE ("Pmipv6Wifi");
 
 using namespace ns3;
 
-namespace containers
-{
-	NodeContainer sta;
-	NodeContainer grp;
-	NodeContainer cn;
-	NodeContainer lmaMagNodes;
-	NodeContainer aps;
-
-	//ref nodes
-	NodeContainer lma;
-	NodeContainer mags;
-	NodeContainer lmaCnNodes;
-	std::vector<NodeContainer> magApPairNodes;
-
-	NetDeviceContainer lmaMagDevs;
-	NetDeviceContainer lmaCnDevs;
-	std::vector<NetDeviceContainer> magApPairDevs;
-	std::vector<NetDeviceContainer> apDevs;
-	std::vector<NetDeviceContainer> magBrDevs;
-
-	NetDeviceContainer staDevs;
-	NetDeviceContainer grpDevs;
-
-	Ipv6InterfaceContainer backboneIfs;
-	Ipv6InterfaceContainer outerIfs;
-
-	std::vector<Ipv6InterfaceContainer> magIfs;
-
-	Ipv6InterfaceContainer staIfs;
-	Ipv6InterfaceContainer grpIfs;
-}
-using namespace containers;
 Ipv6InterfaceContainer AssignIpv6Address(Ptr<NetDevice> device, Ipv6Address addr, Ipv6Prefix prefix)
 {
   Ipv6InterfaceContainer retval;
@@ -146,6 +114,58 @@ Ipv6InterfaceContainer AssignWithoutAddress(Ptr<NetDevice> device)
 
   return retval;
 }
+
+void logSettings()
+{
+	//  LogLevel logAll = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_ALL);
+	//  LogLevel logLogic = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_LOGIC);
+	//  LogLevel logInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO);
+	    LogLevel logDbg = static_cast<LogLevel>(LOG_LEVEL_DEBUG);
+	    (void)logDbg;
+	//  LogComponentEnable ("Udp6Server", logInfo);
+	//  LogComponentEnable ("Pmipv6Agent", logAll);
+	//  LogComponentEnable ("Pmipv6MagNotifier", logAll);
+	//  LogComponentEnable ("Pmipv6Wifi", logDbg);
+	//  LogComponentEnable ("Pmipv6MagNotifier", logDbg);
+	//  LogComponentEnable ("Pmipv6Mag", logDbg);
+	    LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
+	    LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
+}
+
+namespace containers
+{
+	NodeContainer sta;
+	NodeContainer grp;
+	NodeContainer cn;
+	NodeContainer lmaMagNodes;
+	NodeContainer aps;
+
+	//ref nodes
+	NodeContainer lma;
+	NodeContainer mags;
+	NodeContainer lmaCnNodes;
+	std::vector<NodeContainer> magApPairNodes;
+	//MAC Address for MAGs
+	std::vector<Mac48Address> magMacAddrs;
+
+	NetDeviceContainer lmaMagDevs;
+	NetDeviceContainer lmaCnDevs;
+	std::vector<NetDeviceContainer> magApPairDevs;
+	std::vector<NetDeviceContainer> apDevs;
+	std::vector<NetDeviceContainer> magBrDevs;
+
+	NetDeviceContainer staDevs;
+	NetDeviceContainer grpDevs;
+
+	Ipv6InterfaceContainer backboneIfs;
+	Ipv6InterfaceContainer outerIfs;
+
+	std::vector<Ipv6InterfaceContainer> magIfs;
+
+	Ipv6InterfaceContainer staIfs;
+	Ipv6InterfaceContainer grpIfs;
+}
+using namespace containers;
 
 void printMnnsDeviceInfor(const std::string &preface)
 {
@@ -228,6 +248,7 @@ int main (int argc, char *argv[])
 	  magMacAddrs.push_back(magMacAddr);
 	  out.str("");
   }
+  logSettings();
 
   Ipv6InterfaceContainer iifc;
   NS_LOG_UNCOND("Outer Network:");
