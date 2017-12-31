@@ -362,23 +362,23 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
 	  return;
   //Find the STA node(from)
   NodeList::Iterator it = NodeList::Begin();
-  Ptr<Node> sta;
+  Ptr<Node> gl;
   for (; it != NodeList::End(); it++)
   {
 	  if (Mac48Address::ConvertFrom((*it)->GetDevice(1)->GetAddress()) == from)
 	  {
-		   sta = *it;
+		   gl = *it;
 		   break;
 	  }
   }
 
-  if (sta && !rec)
+  if (gl && !rec)
   {
-	  NS_LOG_DEBUG("NodeId: " << sta->GetId() );
+	  NS_LOG_DEBUG("GL is: " << gl->GetId() );
 	  Ptr<GroupFinder> gfApp;
-	  for (uint32_t i = 0; i < sta->GetNApplications() && !gfApp; i++)
+	  for (uint32_t i = 0; i < gl->GetNApplications() && !gfApp; i++)
 	  {
-		  gfApp = sta->GetApplication(i++)->GetObject<GroupFinder> ();
+		  gfApp = gl->GetApplication(i++)->GetObject<GroupFinder> ();
 	  }
 
 	  if (gfApp)
@@ -386,8 +386,12 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
 		  const NetDeviceContainer &c = gfApp->GetGroup();
 		  for(uint32_t i = 0; i < c.GetN(); i++)
 		  {
-			  HandleNewNode(Mac48Address::ConvertFrom(c.Get(i)->GetAddress()),
-					        to, att, true);
+			  Mac48Address candidate =
+					  Mac48Address::ConvertFrom(c.Get(i)->GetAddress());
+			  // skip myself
+			  if (candidate == from)
+				  continue;
+			  HandleNewNode(candidate, to, att, true);
 		  }
 	  }
 	  else

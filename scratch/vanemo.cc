@@ -285,8 +285,8 @@ void initGrpFinder()
 	GroupFinderHelper::SetEnable(true);
 	GroupFinderHelper gf;
 	//do settings
-	gf.SetGroup(grpDevs);
-	grpFinder = gf.Install(gl.Get(0));
+	gf.SetGroup(NetDeviceContainer(glDevs, grpDevs));
+	grpFinder = gf.Install(NodeContainer(gl, grp));
 	grpFinder.Start (Seconds (startTime));
 	grpFinder.Stop (Seconds (endTime));
 }
