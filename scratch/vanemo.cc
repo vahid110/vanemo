@@ -132,6 +132,14 @@ void logSettings()
 	    LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 }
 
+void installConstantMobility(NodeContainer &nc, Ptr<ListPositionAllocator> positionAlloc)
+{
+	MobilityHelper mobility;
+	mobility.SetPositionAllocator (positionAlloc);
+	mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+	mobility.Install (nc);
+}
+
 namespace containers
 {
 	NodeContainer sta;
@@ -250,11 +258,12 @@ int main (int argc, char *argv[])
   NS_LOG_UNCOND("MAC Addresses:");
   assignMagMacAddresses();
 
+  NS_LOG_UNCOND("Outer Network:");
   CsmaHelper csmaLmaCn;
   initCsma(csmaLmaCn);
 
   Ipv6InterfaceContainer iifc;
-  NS_LOG_UNCOND("Outer Network:");
+
   //Outer Dev CSMA and Addressing
   //Link between CN and LMA is 50Mbps and 0.1ms delay
   lmaCnDevs = csmaLmaCn.Install(lmaCnNodes);
@@ -264,6 +273,8 @@ int main (int argc, char *argv[])
   outerIfs.Add(iifc);
   outerIfs.SetForwarding(0, true);
   outerIfs.SetDefaultRouteInAllNodes(0);
+
+  NS_LOG_UNCOND("LMA MAG Network:");
   CsmaHelper csmaLmaMag;
   initCsma(csmaLmaMag);
   //All Link is 50Mbps and 0.1ms delay
@@ -283,7 +294,6 @@ int main (int argc, char *argv[])
   backboneIfs.SetDefaultRouteInAllNodes(0);
 
   //Backbone Mobility
-  MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc;
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (0.0, -20.0, 0.0));   //LMA
@@ -291,16 +301,12 @@ int main (int argc, char *argv[])
   {
 	  positionAlloc->Add (Vector (-50.0 + (i* 100), 20.0, 0.0)); //MAGi
   }
-  mobility.SetPositionAllocator (positionAlloc);
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  mobility.Install (lmaMagNodes);
+  installConstantMobility(lmaMagNodes, positionAlloc);
 
   //CN Mobility
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (75.0, -20.0, 0.0));   //CN
-  mobility.SetPositionAllocator (positionAlloc);
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  mobility.Install (cn);
+  installConstantMobility(cn, positionAlloc);
 
   //AP mobility
   positionAlloc = CreateObject<ListPositionAllocator> ();
@@ -308,9 +314,7 @@ int main (int argc, char *argv[])
   {
 	  positionAlloc->Add (Vector (-50.0 + (i* 100), 40.0, 0.0)); //MAGAPi
   }
-  mobility.SetPositionAllocator (positionAlloc);
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  mobility.Install (aps);
+  installConstantMobility(aps, positionAlloc);
 
   //Wifi
   NS_LOG_UNCOND("MAG-AP Addresses:");
@@ -354,6 +358,7 @@ int main (int argc, char *argv[])
   }
 
   //STA Mobility
+  MobilityHelper mobility;
   NS_LOG_UNCOND ("Create networks and assign MNN Addresses.");
   positionAlloc = CreateObject<ListPositionAllocator> ();
   positionAlloc->Add (Vector (-50.0, 50.0, 0.0)); //STA
@@ -391,6 +396,9 @@ int main (int argc, char *argv[])
   //printMnnsDeviceInfor("WIG");
   NetDeviceContainer mnnDevs(staDevs, grpDevs);
   iifc = AssignIpv6Address(mnnDevs);
+  //MNN routing
+  iifc.SetForwarding (0, true);
+  iifc.SetDefaultRouteInAllNodes (0);
   //printMnnsDeviceInfor("ASG");
 
   //End addresses
@@ -403,11 +411,6 @@ int main (int argc, char *argv[])
 //  Ptr<Node> destNode = sta.Get(0);
   Ipv6Address &destAddress = mnn2Address;
   Ptr<Node> destNode = grp.Get(1);
-
-
-  //MNN routing
-  iifc.SetForwarding (0, true);
-  iifc.SetDefaultRouteInAllNodes (0);
 
   //LMA Profiling
   Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
