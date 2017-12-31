@@ -313,7 +313,32 @@ void initUdpApp()
 	  clientApps.Start (Seconds (startTime + 1.5));
 	  serverApps.Stop (Seconds (endTime));
 	  clientApps.Stop (Seconds (endTime));
+}
 
+void initAnim(AnimationInterface &anim)
+{
+	anim.SetMobilityPollInterval(Seconds(1));
+	anim.UpdateNodeDescription(lmaMagNodes.Get(0), "LMA");
+	anim.UpdateNodeDescription(cn.Get(0), "CN");
+	anim.UpdateNodeDescription(gl.Get(0), "MNN");
+	for (int i = 0; i < backBoneCnt; i++)
+	{
+	  std::ostringstream out("");
+	  out << "AP" << i+1;
+	  anim.UpdateNodeDescription(aps.Get(i), out.str().c_str());
+	  out.str("");
+	  out << "MAG" << i+1;
+	  anim.UpdateNodeDescription(lmaMagNodes.Get(i+1), out.str().c_str());
+	  out.str("");
+	}
+
+	for(unsigned int i = 0; i < grp.GetN(); i++)
+	{
+	  std::ostringstream out("");
+	  out << "MN" << i+1;
+	  anim.UpdateNodeDescription(grp.Get(i), out.str().c_str());
+	  out.str("");
+	}
 }
 
 int main (int argc, char *argv[])
@@ -555,30 +580,9 @@ int main (int argc, char *argv[])
 
   NS_LOG_UNCOND("Installing UDP server on MN");
   initUdpApp();
-  //Anim
+  NS_LOG_UNCOND("Animator Settings");
   AnimationInterface anim("PMIPv6.xml");
-  anim.SetMobilityPollInterval(Seconds(1));
-  anim.UpdateNodeDescription(lmaMagNodes.Get(0), "LMA");
-  anim.UpdateNodeDescription(cn.Get(0), "CN");
-  anim.UpdateNodeDescription(gl.Get(0), "MNN");
-  for (int i = 0; i < backBoneCnt; i++)
-  {
-	  std::ostringstream out("");
-	  out << "AP" << i+1;
-	  anim.UpdateNodeDescription(aps.Get(i), out.str().c_str());
-	  out.str("");
-	  out << "MAG" << i+1;
-	  anim.UpdateNodeDescription(lmaMagNodes.Get(i+1), out.str().c_str());
-	  out.str("");
-  }
-
-  for(unsigned int i = 0; i < grp.GetN(); i++)
-  {
-	  std::ostringstream out("");
-	  out << "MN" << i+1;
-	  anim.UpdateNodeDescription(grp.Get(i), out.str().c_str());
-	  out.str("");
-  }
+  initAnim(anim);
 
   printMnnsDeviceInfor("END");
 
