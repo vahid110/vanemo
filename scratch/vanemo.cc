@@ -241,6 +241,18 @@ void initCsma(CsmaHelper &csma, uint64_t dataRateBps = 50000000, int64_t delay =
   csma.SetDeviceAttribute ("Mtu", UintegerValue (1400));
 }
 
+Ptr<Pmipv6ProfileHelper> enableLMAProfiling()
+{
+	//LMA Profiling
+	Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
+	profile->AddProfile(Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+	for(unsigned int i = 0; i < grpDevs.GetN(); i++)
+	{
+	  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(i)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(i)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+	}
+	return profile;
+}
+
 int main (int argc, char *argv[])
 {
 
@@ -412,13 +424,8 @@ int main (int argc, char *argv[])
   Ipv6Address &destAddress = mnn2Address;
   Ptr<Node> destNode = grp.Get(1);
 
-  //LMA Profiling
-  Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
-  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(staDevs.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
-  for(unsigned int i = 0; i < grpDevs.GetN(); i++)
-  {
-	  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(grpDevs.Get(i)->GetAddress())), Identifier(Mac48Address::ConvertFrom(grpDevs.Get(i)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
-  }
+  Ptr<Pmipv6ProfileHelper> profile = enableLMAProfiling();
+  enableLMAProfiling();
 
   //LMA Helper
   NS_LOG_UNCOND("LMA Helper");
