@@ -277,9 +277,47 @@ void initMnnMobility()
 	mobility.Install(grp);
 }
 
+void initGrpFinder()
+{
+	//Server Application
+	ApplicationContainer grpFinder;
+
+	GroupFinderHelper::SetEnable(true);
+	GroupFinderHelper gf;
+	//do settings
+	gf.SetGroup(grpDevs);
+	grpFinder = gf.Install(sta.Get(0));
+	grpFinder.Start (Seconds (startTime));
+	grpFinder.Stop (Seconds (endTime));
+}
+
+void initUdpApp()
+{
+	  uint16_t port = 6000;
+	  ApplicationContainer serverApps, clientApps;
+	  UdpServerHelper server (port);
+	  serverApps = server.Install (destNode);
+
+	  //Clinet Application
+	  NS_LOG_UNCOND("Installing UDP client on CN");
+	  uint32_t packetSize = 1024;
+	  uint32_t maxPacketCount = 30;
+	  Time interPacketInterval = MilliSeconds(1000);
+	  UdpClientHelper udpClient(destAddress, port);
+	  udpClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
+	  udpClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
+	  udpClient.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
+	  clientApps = udpClient.Install (cn.Get (0));
+
+	  serverApps.Start (Seconds (startTime + 1.0));
+	  clientApps.Start (Seconds (startTime + 1.5));
+	  serverApps.Stop (Seconds (endTime));
+	  clientApps.Stop (Seconds (endTime));
+
+}
+
 int main (int argc, char *argv[])
 {
-
   (void) startTime; (void)endTime;
 
   CommandLine cmd;
@@ -512,38 +550,11 @@ int main (int argc, char *argv[])
   wifiPhy.EnablePcap ("wifi-sta", staDevs.Get(0));
   wifiPhy.EnablePcap ("wifi-mnn", mnnDevs.Get(2));
 
-  //Server Application
-  ApplicationContainer grpFinder;
-
-  GroupFinderHelper::SetEnable(true);
-  GroupFinderHelper gf;
-  //do settings
-  gf.SetGroup(grpDevs);
-  grpFinder = gf.Install(sta.Get(0));
+  NS_LOG_UNCOND("Installing GRP FINDER");
+  initGrpFinder();
 
   NS_LOG_UNCOND("Installing UDP server on MN");
-  uint16_t port = 6000;
-  ApplicationContainer serverApps, clientApps;
-  UdpServerHelper server (port);
-  serverApps = server.Install (destNode);
-
-  //Clinet Application
-  NS_LOG_UNCOND("Installing UDP client on CN");
-  uint32_t packetSize = 1024;
-  uint32_t maxPacketCount = 30;
-  Time interPacketInterval = MilliSeconds(1000);
-  UdpClientHelper udpClient(destAddress, port);
-  udpClient.SetAttribute ("Interval", TimeValue (interPacketInterval));
-  udpClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
-  udpClient.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
-  clientApps = udpClient.Install (cn.Get (0));
-
-  serverApps.Start (Seconds (startTime + 1.0));
-  clientApps.Start (Seconds (startTime + 1.5));
-  serverApps.Stop (Seconds (endTime));
-  clientApps.Stop (Seconds (endTime));
-  grpFinder.Start (Seconds (startTime));
-  grpFinder.Stop (Seconds (endTime));
+  initUdpApp();
   //Anim
   AnimationInterface anim("PMIPv6.xml");
   anim.SetMobilityPollInterval(Seconds(1));
