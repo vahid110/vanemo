@@ -343,55 +343,62 @@ void Pmipv6MagNotifier::SetNewNodeCallback (Callback<void, Mac48Address, Mac48Ad
   m_newNodeCallback = cb;
 }
 
-void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_t att, bool is_recursive)
+void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_t att, bool is_non_gl)
 {
-  NS_LOG_DEBUG("HandleNewNode: " << this << "," << from << "," << to << "," << (uint32_t) att <<
-                " |Sending a message to : " << m_targetAddress );
+  NS_LOG_DEBUG(is_non_gl << " HandleNewNode: " << from << "," << to << "," << m_targetAddress );
   NS_LOG_FUNCTION (this << from << to << (uint32_t) att );
 
-  //Ask him about the possible dependent nodes
-  //for each of them do the same thing you were doing for the STA node
-  
-  Ptr<Packet> p = Create<Packet>();
-  Pmipv6MagNotifyHeader header;
-  header.SetMacAddress(from);
-  header.SetAccessTechnologyType(att);
-  p->AddHeader(header);
-  SendMessage (p, Ipv6Address::GetAny (), m_targetAddress, 64);
-  if (!GroupFinder::IsEnabled() || is_recursive)
-      return;
-  //Find the STA node(from)
-  Ptr<Node> gl = GroupFinder::GetNodebyMac(from);
+  Ptr<Node> node = GroupFinder::GetNodebyMac(from);
+  Ptr<GroupFinder> gfApp = GroupFinder::GetGroupFinderApplication(node);
 
-  if (!gl)
-	  return;
-
-  NS_LOG_DEBUG("GL is: " << gl->GetId() );
-  Ptr<GroupFinder> gfApp;
-  for (uint32_t i = 0; i < gl->GetNApplications(); i++)
+  if (!node || !gfApp)
   {
-	  gfApp = gl->GetApplication(i)->GetObject<GroupFinder> ();
-
-	  if (gfApp)
-		  break;
+	  NS_LOG_DEBUG("No node:" << node << " gfApp:" << gfApp);
+	  return;
   }
 
-  if (gfApp)
+  // 0: Initial GL processing : Just set Group leadership Flag
+  if (GroupFinder::IsEnabled() && !is_non_gl && node)
+	  gfApp->SetGrpLeader(true);
+
+  //If a GL already processed your binding, then just leave.
+  if (gfApp->GetBindMag() == m_targetAddress)
   {
-	  const NetDeviceContainer &c = gfApp->GetGroup();
-	  for(uint32_t i = 0; i < c.GetN(); i++)
-	  {
-		  Mac48Address candidate =
-				  Mac48Address::ConvertFrom(c.Get(i)->GetAddress());
-		  // skip myself
-		  if (candidate == from)
-			  continue;
-		  HandleNewNode(candidate, to, att, true);
-	  }
+	  NS_LOG_DEBUG("Already Bound");
+	  return;
   }
   else
   {
-	  NS_LOG_WARN("GroupFinder Not Found!");
+	  NS_LOG_DEBUG("Reset Binding");
+	  gfApp->SetBindMag(Ipv6Address());
+  }
+
+  // 1: Generic process of Handling New Node.GL and non GL.
+	Ptr<Packet> p = Create<Packet>();
+	Pmipv6MagNotifyHeader header;
+	header.SetMacAddress(from);
+	header.SetAccessTechnologyType(att);
+	p->AddHeader(header);
+	SendMessage (p, Ipv6Address::GetAny (), m_targetAddress, 64);
+
+    gfApp->SetBindMag(m_targetAddress);
+
+  // 2: Only GLs can pass this point.
+  if (!GroupFinder::IsEnabled() || is_non_gl)
+      return;
+  Ptr<Node> gl = node;
+  NS_LOG_DEBUG("GL is: " << gl->GetId() );
+
+  const NetDeviceContainer &c = gfApp->GetGroup();
+  for(uint32_t i = 0; i < c.GetN(); i++)
+  {
+	  Mac48Address candidate =
+			  Mac48Address::ConvertFrom(c.Get(i)->GetAddress());
+
+	  if (candidate == from)// skip myself
+		  continue;
+	  NS_LOG_DEBUG("GL is: " << gl->GetId() << " HandleNewNode" );
+	  HandleNewNode(candidate, to, att, true);
   }
 }
 

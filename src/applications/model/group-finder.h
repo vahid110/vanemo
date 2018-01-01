@@ -48,15 +48,19 @@ public:
    * \return the object TypeId
    */
   static TypeId GetTypeId (void);
+  GroupFinder ();
   static void SetEnable(bool);
   static bool IsEnabled();
   static void AddMacNodeMap(const Mac48Address&, Ptr<Node> );
   static Ptr<Node> GetNodebyMac(const Mac48Address&);
-
-  GroupFinder ();
+  static Ptr<GroupFinder> GetGroupFinderApplication(Ptr<Node>);
 
   void SetGroup(NetDeviceContainer);
   NetDeviceContainer GetGroup() const;
+  void SetBindMag(const Ipv6Address&);
+  Ipv6Address GetBindMag() const;
+  void SetGrpLeader(bool);
+  bool GetGrpLeader() const;
 
   virtual ~GroupFinder ();
 
@@ -69,6 +73,9 @@ private:
   virtual void StopApplication (void);
   //Accompanying devices (excluding the node itself.
   NetDeviceContainer m_devices;
+  Ipv6Address m_bind_mag;
+  bool m_is_grp_leader;
+
   static bool m_enable;
   static std::map<Mac48Address, Ptr<Node> > m_mac_to_node;
 };

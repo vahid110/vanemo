@@ -30,6 +30,12 @@ GroupFinder::GetTypeId (void)
   return tid;
 }
 
+GroupFinder::GroupFinder ()
+	: m_devices()
+	, m_bind_mag()
+	, m_is_grp_leader(false)
+{}
+
 void
 GroupFinder::SetEnable(bool value)
 {
@@ -54,9 +60,18 @@ GroupFinder::GetNodebyMac(const Mac48Address &mac)
     return m_mac_to_node[mac];
 }
 
-GroupFinder::GroupFinder ()
-{
 
+Ptr<GroupFinder>
+GroupFinder::GetGroupFinderApplication(Ptr<Node> node)
+{
+	Ptr<GroupFinder> app;
+	for (uint32_t i = 0; i < node->GetNApplications(); i++)
+	{
+		app = node->GetApplication(i)->GetObject<GroupFinder>();
+	    if (app)
+		    break;
+	}
+	return app;
 }
 
 void
@@ -72,10 +87,28 @@ GroupFinder::GetGroup() const
     return m_devices;
 }
 
-GroupFinder::~GroupFinder()
+void GroupFinder::SetBindMag(const Ipv6Address& val)
 {
-
+	m_bind_mag = val;
 }
+
+Ipv6Address GroupFinder::GetBindMag() const
+{
+	return m_bind_mag;
+}
+
+void GroupFinder::SetGrpLeader(bool val)
+{
+	m_is_grp_leader = val;
+}
+
+bool GroupFinder::GetGrpLeader() const
+{
+	return m_is_grp_leader;
+}
+
+GroupFinder::~GroupFinder()
+{}
 
 void
 GroupFinder::DoDispose (void)
