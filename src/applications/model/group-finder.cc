@@ -19,6 +19,8 @@ NS_LOG_COMPONENT_DEFINE ("GroupFinder");
 NS_OBJECT_ENSURE_REGISTERED (GroupFinder);
 
 bool GroupFinder::m_enable = true;
+std::map<Mac48Address, Ptr<Node> > GroupFinder::m_mac_to_node;
+
 TypeId
 GroupFinder::GetTypeId (void)
 {
@@ -31,13 +33,25 @@ GroupFinder::GetTypeId (void)
 void
 GroupFinder::SetEnable(bool value)
 {
-	m_enable = value;
+    m_enable = value;
 }
 
 bool
 GroupFinder::IsEnabled()
 {
-	return m_enable;
+    return m_enable;
+}
+
+void
+GroupFinder::AddMacNodeMap(const Mac48Address &mac, Ptr<Node> node)
+{
+    m_mac_to_node[mac] = node;
+}
+
+Ptr<Node>
+GroupFinder::GetNodebyMac(const Mac48Address &mac)
+{
+    return m_mac_to_node[mac];
 }
 
 GroupFinder::GroupFinder ()
@@ -48,14 +62,14 @@ GroupFinder::GroupFinder ()
 void
 GroupFinder::SetGroup(NetDeviceContainer c)
 {
-	NS_LOG_DEBUG(this << "GroupFinder::SetGroup: " << c.GetN());
-	m_devices = c;
+    NS_LOG_DEBUG(this << "GroupFinder::SetGroup: " << c.GetN());
+    m_devices = c;
 }
 
 NetDeviceContainer
 GroupFinder::GetGroup() const
 {
-	return m_devices;
+    return m_devices;
 }
 
 GroupFinder::~GroupFinder()

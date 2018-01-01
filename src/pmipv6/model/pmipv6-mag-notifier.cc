@@ -287,12 +287,12 @@ enum IpL4Protocol::RxStatus Pmipv6MagNotifier::Receive (Ptr<Packet> packet, Ipv6
   Pmipv6MagNotifyHeader magNotifyHeader;
   if (!m_newNodeCallback.IsNull ())
     {
-	  NS_LOG_DEBUG("Pmipv6MagNotifier::Receive");
+      NS_LOG_DEBUG("Pmipv6MagNotifier::Receive");
       p->RemoveHeader(magNotifyHeader);
       m_newNodeCallback (magNotifyHeader.GetMacAddress (),
                          Mac48Address::ConvertFrom (interface->GetDevice ()->GetAddress ()),
                          magNotifyHeader.GetAccessTechnologyType (),
-						 false);
+                         false);
     }
   return IpL4Protocol::RX_OK;
 }
@@ -343,10 +343,10 @@ void Pmipv6MagNotifier::SetNewNodeCallback (Callback<void, Mac48Address, Mac48Ad
   m_newNodeCallback = cb;
 }
 
-void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_t att, bool rec)
+void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_t att, bool is_recursive)
 {
   NS_LOG_DEBUG("HandleNewNode: " << this << "," << from << "," << to << "," << (uint32_t) att <<
-		        " |Sending a message to : " << m_targetAddress );
+                " |Sending a message to : " << m_targetAddress );
   NS_LOG_FUNCTION (this << from << to << (uint32_t) att );
 
   //Ask him about the possible dependent nodes
@@ -358,49 +358,40 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   header.SetAccessTechnologyType(att);
   p->AddHeader(header);
   SendMessage (p, Ipv6Address::GetAny (), m_targetAddress, 64);
-  if (!GroupFinder::IsEnabled())
-	  return;
+  if (!GroupFinder::IsEnabled() || is_recursive)
+      return;
   //Find the STA node(from)
-  NodeList::Iterator it = NodeList::Begin();
-  Ptr<Node> gl;
-  for (; it != NodeList::End(); it++)
-  {
-	  if (Mac48Address::ConvertFrom((*it)->GetDevice(1)->GetAddress()) == from)
-	  {
-		   gl = *it;
-		   break;
-	  }
-  }
+  Ptr<Node> gl = GroupFinder::GetNodebyMac(from);
 
-  if (gl && !rec)
-  {
-	  NS_LOG_DEBUG("GL is: " << gl->GetId() );
-	  Ptr<GroupFinder> gfApp;
-	  for (uint32_t i = 0; i < gl->GetNApplications(); i++)
-	  {
-		  gfApp = gl->GetApplication(i)->GetObject<GroupFinder> ();
+  if (!gl)
+	  return;
 
-		  if (gfApp)
-			  break;
-	  }
+  NS_LOG_DEBUG("GL is: " << gl->GetId() );
+  Ptr<GroupFinder> gfApp;
+  for (uint32_t i = 0; i < gl->GetNApplications(); i++)
+  {
+	  gfApp = gl->GetApplication(i)->GetObject<GroupFinder> ();
 
 	  if (gfApp)
+		  break;
+  }
+
+  if (gfApp)
+  {
+	  const NetDeviceContainer &c = gfApp->GetGroup();
+	  for(uint32_t i = 0; i < c.GetN(); i++)
 	  {
-		  const NetDeviceContainer &c = gfApp->GetGroup();
-		  for(uint32_t i = 0; i < c.GetN(); i++)
-		  {
-			  Mac48Address candidate =
-					  Mac48Address::ConvertFrom(c.Get(i)->GetAddress());
-			  // skip myself
-			  if (candidate == from)
-				  continue;
-			  HandleNewNode(candidate, to, att, true);
-		  }
+		  Mac48Address candidate =
+				  Mac48Address::ConvertFrom(c.Get(i)->GetAddress());
+		  // skip myself
+		  if (candidate == from)
+			  continue;
+		  HandleNewNode(candidate, to, att, true);
 	  }
-	  else
-	  {
-		  NS_LOG_WARN("GroupFinder Not Found!");
-	  }
+  }
+  else
+  {
+	  NS_LOG_WARN("GroupFinder Not Found!");
   }
 }
 

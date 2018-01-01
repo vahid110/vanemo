@@ -30,13 +30,13 @@ namespace ns3 {
 void
 GroupFinderHelper::SetEnable(bool value)
 {
-	GroupFinder::SetEnable(value);
+    GroupFinder::SetEnable(value);
 }
 
 bool
 GroupFinderHelper::IsEnabled()
 {
-	return GroupFinder::IsEnabled();
+    return GroupFinder::IsEnabled();
 }
 
 GroupFinderHelper::GroupFinderHelper (/*Ipv6Address address, uint16_t port*/)
@@ -82,7 +82,7 @@ GroupFinderHelper::Install (NodeContainer c) const
 void
 GroupFinderHelper::SetGroup(NetDeviceContainer c)
 {
-	m_devices = c;
+    m_devices = c;
 }
 
 Ptr<Application>
@@ -91,7 +91,9 @@ GroupFinderHelper::InstallPriv (Ptr<Node> node) const
   Ptr<GroupFinder> app = m_factory.Create<GroupFinder> ();
   app->SetGroup(m_devices);
   node->AddApplication (app);
-
+  GroupFinder::AddMacNodeMap(Mac48Address::ConvertFrom(
+                                          node->GetDevice(1)->GetAddress()),
+                                                          node);
   return app;
 }
 

@@ -25,6 +25,9 @@
 #include "ns3/ipv4-address.h"
 #include "ns3/traced-callback.h"
 #include "ns3/net-device-container.h"
+#include "ns3/mac48-address.h"
+
+#include <map>
 
 namespace ns3 {
 
@@ -47,6 +50,8 @@ public:
   static TypeId GetTypeId (void);
   static void SetEnable(bool);
   static bool IsEnabled();
+  static void AddMacNodeMap(const Mac48Address&, Ptr<Node> );
+  static Ptr<Node> GetNodebyMac(const Mac48Address&);
 
   GroupFinder ();
 
@@ -65,6 +70,7 @@ private:
   //Accompanying devices (excluding the node itself.
   NetDeviceContainer m_devices;
   static bool m_enable;
+  static std::map<Mac48Address, Ptr<Node> > m_mac_to_node;
 };
 
 } // namespace ns3
