@@ -16,51 +16,55 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef GROUP_FINDER_CLIENT_H
-#define GROUP_FINDER_CLIENT_H
+#ifndef VELOCITY_SENSOR_H
+#define VELOCITY_SENSOR_H
 
 #include "ns3/application.h"
 #include "ns3/event-id.h"
+#include "ns3/mobility-module.h"
+/*
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
 #include "ns3/traced-callback.h"
 #include "ns3/net-device-container.h"
 #include "ns3/mac48-address.h"
-#include "ns3/velocity-sensor.h"
 
 #include <map>
+*/
 
 namespace ns3 {
 
-class Socket;
-class Packet;
-
 /**
- * Find Groups of nodes.
+ * \ingroup udpecho
+ * \brief A Udp Echo client
+ *
+ * Every packet sent should be returned by the server and received here.
  */
-class GroupFinder : public Application
+class VelocitySensor : public Application
 {
 public:
+	enum VelocityState
+	{
+		VS_UNKNOWN = 0,
+		VS_DESCELERATING,
+		VS_STOPPED,
+		VS_ACCELARATING,
+		VS_ONMOVE,
+	};
   /**
    * \brief Get the type ID.
    * \return the object TypeId
    */
   static TypeId GetTypeId (void);
-  GroupFinder ();
-  static void SetEnable(bool);
-  static bool IsEnabled();
-  static void AddMacNodeMap(const Mac48Address&, Ptr<Node> );
-  static Ptr<Node> GetNodebyMac(const Mac48Address&);
-  static Ptr<GroupFinder> GetGroupFinderApplication(Ptr<Node>);
-
-  void SetGroup(NetDeviceContainer);
-  NetDeviceContainer GetGroup() const;
-  void SetBindMag(const Ipv6Address&);
-  Ipv6Address GetBindMag() const;
-  void SetGrpLeader(bool);
-  bool GetGrpLeader() const;
-
-  virtual ~GroupFinder ();
+  VelocitySensor ();
+  void RegisterVelocityCB(Callback<void, VelocitySensor::VelocityState> cb);
+  Vector GetCurVelocity();
+  VelocityState GetCurState();
+private:
+  Vector GetVelocity();
+  void StoreVelocity(const Vector&);
+  void StoreVelocity();
+  void UpdateState();
 
 protected:
   virtual void DoDispose (void);
@@ -69,17 +73,23 @@ private:
 
   virtual void StartApplication (void);
   virtual void StopApplication (void);
-  void MobilityStateUpdated(VelocitySensor::VelocityState);
-  //Accompanying devices (excluding the node itself.
-  NetDeviceContainer m_devices;
-  Ipv6Address m_bind_mag;
-  bool m_is_grp_leader;
-  VelocitySensor::VelocityState m_cur_mobility;
 
-  static bool m_enable;
-  static std::map<Mac48Address, Ptr<Node> > m_mac_to_node;
+  struct State
+  {
+	  State()
+		: m_v_state(VS_UNKNOWN)
+		, m_velocity()
+	  	, m_timestamp(0)
+	{}
+	  VelocityState m_v_state;
+	  Vector m_velocity;
+	  Time m_timestamp;
+  };
+
+  State m_cur_state;
+  Callback<void, VelocitySensor::VelocityState> m_cb;
 };
 
 } // namespace ns3
 
-#endif /* GROUP_FINDER_CLIENT_H */
+#endif /* VELOCITY_SENSOR_H */

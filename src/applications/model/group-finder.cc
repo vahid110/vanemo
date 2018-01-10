@@ -34,6 +34,7 @@ GroupFinder::GroupFinder ()
 	: m_devices()
 	, m_bind_mag()
 	, m_is_grp_leader(false)
+	, m_cur_mobility(VelocitySensor::VS_UNKNOWN)
 {}
 
 void
@@ -127,6 +128,12 @@ void
 GroupFinder::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
+}
+
+void
+GroupFinder::MobilityStateUpdated(VelocitySensor::VelocityState state)
+{
+	m_cur_mobility = state;
 }
 
 } // Namespace ns3
