@@ -32,7 +32,8 @@
 #include "ns3/ipv6-static-source-routing.h"
 #include "ns3/ipv6-routing-table-entry.h"
 #include "ns3/netanim-module.h"
-#include "ns3/group-finder.h"
+#include "ns3/group-finder-helper.h"
+#include "ns3/velocity-sensor-helper.h"
 
 #include <iostream>
 #include <iomanip>
@@ -275,6 +276,18 @@ void initMnnMobility()
 	mobility.SetPositionAllocator (positionAlloc);
 	mobility.PushReferenceMobilityModel(gl.Get (0));
 	mobility.Install(grp);
+}
+
+void initVelocitySensor(double interval)
+{
+	//Server Application
+	ApplicationContainer velocitySensor;
+
+	VelocitySensorHelper vs(Seconds (interval));
+	//do settings
+	velocitySensor = vs.Install(NodeContainer(gl, grp));
+	velocitySensor.Start (Seconds (startTime));
+	velocitySensor.Stop (Seconds (endTime));
 }
 
 void initGrpFinder()
@@ -574,6 +587,10 @@ int main (int argc, char *argv[])
   }
   wifiPhy.EnablePcap ("wifi-gl", glDevs.Get(0));
   wifiPhy.EnablePcap ("wifi-mnn", mnnDevs.Get(2));
+
+  NS_LOG_UNCOND("Installing SENSOR");
+
+  initVelocitySensor(5.0);
 
   NS_LOG_UNCOND("Installing GRP FINDER");
   initGrpFinder();

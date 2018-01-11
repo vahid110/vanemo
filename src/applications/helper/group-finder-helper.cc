@@ -92,9 +92,17 @@ GroupFinderHelper::InstallPriv (Ptr<Node> node) const
   node->AddApplication (app);
   if( m_prerequire_velocity_sensor)
   {
-	  VelocitySensor::state_change_notifier_t cb = MakeCallback(&GroupFinder::MobilityStateUpdated, app);
-	  Ptr<VelocitySensor> vs = node->GetObject<VelocitySensor> ();
+	  Ptr<VelocitySensor> vs;
+      for (uint32_t i = 0; i < node->GetNApplications (); i++)
+      {
+    	  Ptr<Application> app = node->GetApplication (i);
+    	  vs = DynamicCast<VelocitySensor> (app);
+    	  if (vs)
+    		  break;
+      }
+
 	  NS_ASSERT_MSG(vs, "Velocity Sensor Application should be installed First. Node:" << node->GetId() );
+	  VelocitySensor::state_change_notifier_t cb = MakeCallback(&GroupFinder::MobilityStateUpdated, app);
 	  vs->RegisterVelocityCB(cb);
 
   }
