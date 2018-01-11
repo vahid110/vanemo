@@ -35,7 +35,7 @@ namespace ns3 {
 class VelocitySensor : public Application
 {
 public:
-	enum VelocityState
+	enum MobilityState
 	{
 		VS_UNKNOWN = 0,
 		VS_DESCELERATING,
@@ -43,6 +43,9 @@ public:
 		VS_ACCELARATING,
 		VS_ONMOVE,
 	};
+    typedef Callback<void,
+			   VelocitySensor::MobilityState,
+			   VelocitySensor::MobilityState> state_change_notifier_t;
   /**
    * \brief Get the type ID.
    * \return the object TypeId
@@ -50,24 +53,27 @@ public:
   static TypeId GetTypeId (void);
   VelocitySensor ();
   void RegisterVelocityCB(Callback<void,
-		                           VelocitySensor::VelocityState,
-								   VelocitySensor::VelocityState> cb);
+		                           VelocitySensor::MobilityState,
+								   VelocitySensor::MobilityState> cb);
   Vector GetCurVelocity();
-  VelocityState GetCurState();
+  MobilityState GetCurState();
+  void SetUpdateInterval(const Time&);
 private:
   Vector GetVelocity();
-  void StoreVelocity(const Vector&);
-  void StoreVelocity();
   void UpdateState();
 
 protected:
   virtual void DoDispose (void);
 
 private:
+  // inherited from Application base class.
+  virtual void StartApplication (void);    // Called at time specified by Start
+  virtual void StopApplication (void);     // Called at time specified by Stop
+
   struct State
   {
 	  State()
-		: m_v_state(VS_UNKNOWN)
+		: m_mobilityState(VS_UNKNOWN)
 	  	, m_factor(0)
 		, m_velocity()
 	  {
@@ -75,28 +81,28 @@ private:
 	  }
 
 	  State(const Vector& v)
-		: m_v_state(VS_UNKNOWN)
+		: m_mobilityState(VS_UNKNOWN)
 		, m_velocity(v)
 	  {
 	      m_factor = v.x * v.x + v.y * v.y + v.z * v.z;
 	      TimeIt();
 	  }
 
-	  VelocityState m_v_state;
+	  MobilityState m_mobilityState;
 	  double m_factor;
 	  Vector m_velocity;
-	  Time m_timestamp;
+	  Time m_timeStamp;
   private:
 	  void TimeIt()
 	  {
-		  m_timestamp =  Simulator::Now ();
+		  m_timeStamp =  Simulator::Now ();
 	  }
   };
 
-  State m_cur_state;
-  Callback<void,
-           VelocitySensor::VelocityState,
-		   VelocitySensor::VelocityState> m_state_change_notifier;
+  State m_curState;
+  std::list<state_change_notifier_t> m_stateChangeNotifiers;
+  EventId m_updateEvent;
+  Time m_updateInterval;
 };
 
 } // namespace ns3

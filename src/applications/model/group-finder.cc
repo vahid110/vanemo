@@ -119,8 +119,8 @@ GroupFinder::DoDispose (void)
 }
 
 void
-GroupFinder::MobilityStateUpdated(VelocitySensor::VelocityState from,
-								  VelocitySensor::VelocityState to)
+GroupFinder::MobilityStateUpdated(VelocitySensor::MobilityState from,
+								  VelocitySensor::MobilityState to)
 {
 	m_cur_mobility = to;//to do: Add more logic here, if required
 }

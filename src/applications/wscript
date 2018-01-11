@@ -29,6 +29,7 @@ def build(bld):
         'helper/udp-echo-helper.cc',
         'helper/v4ping-helper.cc',
         'helper/radvd-helper.cc',
+        'helper/velocity-sensor-helper.cc',
         'helper/group-finder-helper.cc',
         ]
 
@@ -66,6 +67,7 @@ def build(bld):
         'helper/udp-echo-helper.h',
         'helper/v4ping-helper.h',
         'helper/radvd-helper.h',
+        'helper/velocity-sensor-helper.h',
         'helper/group-finder-helper.h',
         ]
 

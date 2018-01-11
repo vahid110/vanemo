@@ -59,6 +59,8 @@ public:
   Ipv6Address GetBindMag() const;
   void SetGrpLeader(bool);
   bool GetGrpLeader() const;
+  void MobilityStateUpdated(const VelocitySensor::MobilityState,
+		  	  	  	  	    const VelocitySensor::MobilityState);
 
   virtual ~GroupFinder ();
 
@@ -66,13 +68,11 @@ protected:
   virtual void DoDispose (void);
 
 private:
-  void MobilityStateUpdated(const VelocitySensor::VelocityState,
-		  	  	  	  	    const VelocitySensor::VelocityState);
   //Accompanying devices (excluding the node itself.
   NetDeviceContainer m_devices;
   Ipv6Address m_bind_mag;
   bool m_is_grp_leader;
-  VelocitySensor::VelocityState m_cur_mobility;
+  VelocitySensor::MobilityState m_cur_mobility;
 
   static bool m_enable;
   static std::map<Mac48Address, Ptr<Node> > m_mac_to_node;

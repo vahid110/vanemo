@@ -39,11 +39,10 @@ GroupFinderHelper::IsEnabled()
     return GroupFinder::IsEnabled();
 }
 
-GroupFinderHelper::GroupFinderHelper (/*Ipv6Address address, uint16_t port*/)
+GroupFinderHelper::GroupFinderHelper (bool VSRequired)
+	: m_prerequire_velocity_sensor(VSRequired)
 {
   m_factory.SetTypeId (GroupFinder::GetTypeId ());
-//  SetAttribute ("RemoteAddress", AddressValue (Address(address)));
-//  SetAttribute ("RemotePort", UintegerValue (port));
 }
 
 void 
@@ -91,6 +90,14 @@ GroupFinderHelper::InstallPriv (Ptr<Node> node) const
   Ptr<GroupFinder> app = m_factory.Create<GroupFinder> ();
   app->SetGroup(m_devices);
   node->AddApplication (app);
+  if( m_prerequire_velocity_sensor)
+  {
+	  VelocitySensor::state_change_notifier_t cb = MakeCallback(&GroupFinder::MobilityStateUpdated, app);
+	  Ptr<VelocitySensor> vs = node->GetObject<VelocitySensor> ();
+	  NS_ASSERT_MSG(vs, "Velocity Sensor Application should be installed First. Node:" << node->GetId() );
+	  vs->RegisterVelocityCB(cb);
+
+  }
   GroupFinder::AddMacNodeMap(Mac48Address::ConvertFrom(
                                           node->GetDevice(1)->GetAddress()),
                                                           node);
