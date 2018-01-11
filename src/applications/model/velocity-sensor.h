@@ -19,18 +19,10 @@
 #ifndef VELOCITY_SENSOR_H
 #define VELOCITY_SENSOR_H
 
+#include "ns3/core-module.h"
 #include "ns3/application.h"
 #include "ns3/event-id.h"
 #include "ns3/mobility-module.h"
-/*
-#include "ns3/ptr.h"
-#include "ns3/ipv4-address.h"
-#include "ns3/traced-callback.h"
-#include "ns3/net-device-container.h"
-#include "ns3/mac48-address.h"
-
-#include <map>
-*/
 
 namespace ns3 {
 
@@ -57,7 +49,9 @@ public:
    */
   static TypeId GetTypeId (void);
   VelocitySensor ();
-  void RegisterVelocityCB(Callback<void, VelocitySensor::VelocityState> cb);
+  void RegisterVelocityCB(Callback<void,
+		                           VelocitySensor::VelocityState,
+								   VelocitySensor::VelocityState> cb);
   Vector GetCurVelocity();
   VelocityState GetCurState();
 private:
@@ -70,24 +64,39 @@ protected:
   virtual void DoDispose (void);
 
 private:
-
-  virtual void StartApplication (void);
-  virtual void StopApplication (void);
-
   struct State
   {
 	  State()
 		: m_v_state(VS_UNKNOWN)
+	  	, m_factor(0)
 		, m_velocity()
-	  	, m_timestamp(0)
-	{}
+	  {
+		  TimeIt();
+	  }
+
+	  State(const Vector& v)
+		: m_v_state(VS_UNKNOWN)
+		, m_velocity(v)
+	  {
+	      m_factor = v.x * v.x + v.y * v.y + v.z * v.z;
+	      TimeIt();
+	  }
+
 	  VelocityState m_v_state;
+	  double m_factor;
 	  Vector m_velocity;
 	  Time m_timestamp;
+  private:
+	  void TimeIt()
+	  {
+		  m_timestamp =  Simulator::Now ();
+	  }
   };
 
   State m_cur_state;
-  Callback<void, VelocitySensor::VelocityState> m_cb;
+  Callback<void,
+           VelocitySensor::VelocityState,
+		   VelocitySensor::VelocityState> m_state_change_notifier;
 };
 
 } // namespace ns3

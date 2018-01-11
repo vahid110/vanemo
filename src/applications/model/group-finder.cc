@@ -118,22 +118,11 @@ GroupFinder::DoDispose (void)
   Application::DoDispose ();
 }
 
-void 
-GroupFinder::StartApplication (void)
-{
-  NS_LOG_FUNCTION (this);
-}
-
-void 
-GroupFinder::StopApplication ()
-{
-  NS_LOG_FUNCTION (this);
-}
-
 void
-GroupFinder::MobilityStateUpdated(VelocitySensor::VelocityState state)
+GroupFinder::MobilityStateUpdated(VelocitySensor::VelocityState from,
+								  VelocitySensor::VelocityState to)
 {
-	m_cur_mobility = state;
+	m_cur_mobility = to;//to do: Add more logic here, if required
 }
 
 } // Namespace ns3

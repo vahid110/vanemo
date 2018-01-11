@@ -66,10 +66,8 @@ protected:
   virtual void DoDispose (void);
 
 private:
-
-  virtual void StartApplication (void);
-  virtual void StopApplication (void);
-  void MobilityStateUpdated(VelocitySensor::VelocityState);
+  void MobilityStateUpdated(const VelocitySensor::VelocityState,
+		  	  	  	  	    const VelocitySensor::VelocityState);
   //Accompanying devices (excluding the node itself.
   NetDeviceContainer m_devices;
   Ipv6Address m_bind_mag;

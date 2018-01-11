@@ -474,11 +474,11 @@ int main (int argc, char *argv[])
 	  magOut << "MAG" << i << " Addresses: " << magIfs[i].GetAddress(0,0) << " and " << magIfs[i].GetAddress(0,1) << "\n";
 	  apOut << "AP" << i << " Mac Addresses: " << magApPairDevs[i].Get(1)->GetAddress() << "\n";
   }
-  NS_LOG_UNCOND (magOut.str() << apOut.str() );
+  NS_LOG_UNCOND(magOut.str() << apOut.str());
 
   initMnnMobility();
 
-  NS_LOG_UNCOND ("Create networks and assign MNN Addresses.");
+  NS_LOG_UNCOND("Create networks and assign MNN Addresses.");
 
   //GL movement
   Ptr<ConstantVelocityMobilityModel> cvm = gl.Get(0)->GetObject<ConstantVelocityMobilityModel>();
@@ -487,23 +487,18 @@ int main (int argc, char *argv[])
   wifiMac.SetType ("ns3::StaWifiMac",
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
-  //printMnnsDeviceInfor("WIS");
 
   glDevs.Add( wifi.Install (wifiPhy, wifiMac, gl));
-  //printMnnsDeviceInfor("WIS_");
   NS_LOG_UNCOND("GL Mac Addresses: " << glDevs.Get(0)->GetAddress());
 
-  //printMnnsDeviceInfor("WIG");
 
   //Mobile Addressing
   grpDevs.Add( wifi.Install (wifiPhy, wifiMac, grp));
-  //printMnnsDeviceInfor("WIG");
   NetDeviceContainer mnnDevs(glDevs, grpDevs);
   iifc = AssignIpv6Address(mnnDevs);
   //MNN routing
   iifc.SetForwarding (0, true);
   iifc.SetDefaultRouteInAllNodes (0);
-  //printMnnsDeviceInfor("ASG");
 
   //End addresses
   Ipv6Address glAddress = mnnDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
