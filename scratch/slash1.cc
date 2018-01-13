@@ -124,14 +124,14 @@ main (int argc, char *argv[])
   onoff.SetConstantRate (DataRate (6000));
   ApplicationContainer apps = onoff.Install (nA);
   apps.Start (Seconds (1.0));
-  apps.Stop (Seconds (10.0));
+  apps.Stop (Seconds (3.0));
 
   // Create a packet sink to receive these packets
   PacketSinkHelper sink ("ns3::UdpSocketFactory",
                          Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
   apps = sink.Install (nC);
   apps.Start (Seconds (1.0));
-  apps.Stop (Seconds (10.0));
+  apps.Stop (Seconds (3.0));
 
   AsciiTraceHelper ascii;
   p2p.EnableAsciiAll (ascii.CreateFileStream ("static-routing-slash32.tr"));

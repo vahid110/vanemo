@@ -595,8 +595,10 @@ int main (int argc, char *argv[])
   NS_LOG_UNCOND("Installing GRP FINDER");
   initGrpFinder();
 
+  //Application
   NS_LOG_UNCOND("Installing UDP server on MN");
   initUdpApp();
+
   NS_LOG_UNCOND("Animator Settings");
   AnimationInterface anim("PMIPv6.xml");
   initAnim(anim);
