@@ -118,11 +118,6 @@ int main (int argc, char *argv[])
   Ptr<Ipv4StaticRouting> staticRoutingC2 = ipv4RoutingHelper.GetStaticRouting (ipv4c2);
   staticRoutingC2->AddHostRouteTo (Ipv4Address ("10.1.1.1"), Ipv4Address ("10.1.1.2"), 1);
 
-//  //Modified(Added)
-//  Ptr<Ipv4> ipv4c1 = c.Get (1)->GetObject<Ipv4> ();
-//  Ptr<Ipv4StaticRouting> staticRoutingC1 = ipv4RoutingHelper.GetStaticRouting (ipv4c1);
-//  staticRoutingC1->AddHostRouteTo (Ipv4Address ("10.1.1.1"), 1);
-
   {
 
 	LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
@@ -150,52 +145,11 @@ int main (int argc, char *argv[])
   clientApps.Stop (Seconds (10.0));
   }
 
-//  //ONOFF APP
-//  uint16_t port = 9;   // Discard port (RFC 863)
-//  OnOffHelper onoff ("ns3::UdpSocketFactory",
-//                     Address (InetSocketAddress (i.GetAddress(0), port)));
-//  onoff.SetConstantRate (DataRate (6000));
-//  ApplicationContainer apps = onoff.Install (c.Get(2));
-//  apps.Start (Seconds (1.0));
-//  apps.Stop (Seconds (10.0));
-//
-//  // Create a packet sink to receive these packets
-//  PacketSinkHelper sink ("ns3::UdpSocketFactory",
-//                         Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
-//  apps = sink.Install (c.Get(0));
-//  apps.Start (Seconds (1.0));
-//  apps.Stop (Seconds (10.0));
 
-
-
-  //SOCKET BASE APP
-//  TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-//  Ptr<Socket> recvSink = Socket::CreateSocket (c.Get (0), tid);
-//  InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
-//  recvSink->Bind (local);
-//  recvSink->SetRecvCallback (MakeCallback (&ReceivePacket));
-//
-////  Ptr<Socket> source = Socket::CreateSocket (c.Get (1), tid);
-//  Ptr<Socket> source = Socket::CreateSocket (c.Get (2), tid);//Modified
-//
-//  InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
-//  source->SetAllowBroadcast (true);
-//  source->Connect (remote);
-//
   wifiPhy.EnablePcap ("wifi-simple-adhoc", devices);
-//
-//  NS_LOG_UNCOND ("Testing " << numPackets  << " packets sent with receiver rss " << rss );
-//
-//  Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
-//                                  Seconds (1.0), &GenerateTraffic,
-//                                  source, packetSize, numPackets, interPacketInterval);
 
   Simulator::Run ();
   Simulator::Destroy ();
-
-//  //  //Modified(Added)
-//  Ptr<PacketSink> sink1 = DynamicCast<PacketSink> (apps.Get (0));
-//  std::cout << "Total Bytes Received: " << sink1->GetTotalRx () << std::endl;
 
   return 0;
 }
