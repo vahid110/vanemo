@@ -24,6 +24,8 @@
 #include "ns3/event-id.h"
 #include "ns3/mobility-module.h"
 
+#include <sstream>
+
 namespace ns3 {
 
 /**
@@ -58,6 +60,18 @@ public:
   Vector GetCurVelocity();
   MobilityState GetCurState();
   void SetUpdateInterval(const Time&);
+  static const std::string MobilityStateStr(MobilityState state)
+  {
+	  if (state == VS_DESCELERATING)
+		  return "VS_DESCELERATING";
+	  if (state == VS_STOPPED)
+		  return "VS_STOPPED";
+	  if (state == VS_ACCELARATING)
+		  return "VS_ACCELARATING";
+	  if (state == VS_ONMOVE)
+		  return "VS_ONMOVE";
+	  return "VS_UNKNOWN";
+  }
 private:
   Vector GetVelocity();
   void UpdateState();
@@ -86,6 +100,14 @@ private:
 	  {
 	      m_factor = v.x * v.x + v.y * v.y + v.z * v.z;
 	      TimeIt();
+	  }
+
+	  const std::string StateStr()
+	  {
+		  std::stringstream out("");
+		  out << "[" << VelocitySensor::MobilityStateStr(m_mobilityState) <<
+				 " , " << m_factor << "]";
+		  return out.str();
 	  }
 
 	  MobilityState m_mobilityState;

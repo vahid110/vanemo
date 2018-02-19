@@ -62,43 +62,58 @@ void VelocitySensor::UpdateState()
 	const double &f = m_curState.m_factor;
 	const Time &t = m_curState.m_timeStamp;
 	(void)t;
+	(void)v;
+
 	State s(GetVelocity());
+
+	s.m_mobilityState = vs;
 
 	if (vs == VS_UNKNOWN)
 	{
-		Vector paused = Vector(0, 0, 0);
-		s.m_mobilityState = (v == paused ? VS_STOPPED : VS_ACCELARATING);
-	}
-	else if (vs == VS_STOPPED && f < s.m_factor)
-	{
-		s.m_mobilityState = VS_ACCELARATING;
-	}
-	else if (vs == VS_ACCELARATING && f < s.m_factor)
-	{
-		s.m_mobilityState = VS_ONMOVE;
-	}
-	else if (vs == VS_ACCELARATING && f > s.m_factor)
-	{
-		s.m_mobilityState = VS_DESCELERATING;
-	}
-	else if (vs == VS_ONMOVE && f > s.m_factor)
-	{
-		s.m_mobilityState = VS_DESCELERATING;
-	}
-	else if (vs == VS_DESCELERATING && f > s.m_factor)
-	{
-		Vector paused = Vector(0, 0, 0);
-		if(v == paused)
+		if (s.m_factor == 0)
 			s.m_mobilityState = VS_STOPPED;
+		if (s.m_factor > 0)
+			s.m_mobilityState = VS_ACCELARATING;
+	}
+	else if (vs == VS_STOPPED)
+	{
+		if (f < s.m_factor)
+			s.m_mobilityState = VS_ACCELARATING ;
+	}
+	else if (vs == VS_ACCELARATING)
+	{
+		if (f != s.m_factor)
+			s.m_mobilityState = (f < s.m_factor ? VS_ONMOVE : VS_DESCELERATING);
+	}
+	else if (vs == VS_ONMOVE)
+	{
+		if (f != s.m_factor)
+			s.m_mobilityState = (f > s.m_factor ? VS_DESCELERATING : VS_ACCELARATING);
+	}
+	else if (vs == VS_DESCELERATING)
+	{
+		if (f != s.m_factor)
+		{
+			if (f < s.m_factor)
+				s.m_mobilityState = VS_ACCELARATING;
+		}
 	}
 
-	if (s.m_mobilityState== VS_UNKNOWN)
+	if (s.m_factor == 0)
+		s.m_mobilityState = VS_STOPPED;
+
+	if (s.m_mobilityState == VS_UNKNOWN)
 	{
 		NS_LOG_ERROR("Still VS_UNKNOWN!");
 	}
 
 	MobilityState from = m_curState.m_mobilityState;
 	MobilityState to = s.m_mobilityState;
+
+	if (m_curState.m_mobilityState != s.m_mobilityState)
+		NS_LOG_UNCOND("Changing state from " << m_curState.StateStr() << " to " << s.StateStr() <<".");
+	else
+		NS_LOG_UNCOND("state Unchanged from " << m_curState.StateStr() << " to " << s.StateStr() <<".");
 
 	m_curState = s;
 

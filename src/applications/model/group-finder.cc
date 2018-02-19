@@ -58,7 +58,10 @@ GroupFinder::AddMacNodeMap(const Mac48Address &mac, Ptr<Node> node)
 Ptr<Node>
 GroupFinder::GetNodebyMac(const Mac48Address &mac)
 {
-    return m_mac_to_node[mac];
+	std::map<Mac48Address, Ptr<Node> >::iterator it = m_mac_to_node.find(mac);
+	if (it == m_mac_to_node.end())
+		return 0;
+    return it->second;
 }
 
 
@@ -122,6 +125,7 @@ void
 GroupFinder::MobilityStateUpdated(VelocitySensor::MobilityState from,
 								  VelocitySensor::MobilityState to)
 {
+	NS_LOG_UNCOND("MobilityStateUpdated");
 	m_cur_mobility = to;//to do: Add more logic here, if required
 }
 

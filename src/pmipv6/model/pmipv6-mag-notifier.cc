@@ -349,6 +349,7 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   NS_LOG_FUNCTION (this << from << to << (uint32_t) att );
 
   Ptr<Node> node = GroupFinder::GetNodebyMac(from);
+  NS_ASSERT_MSG(node, "No node found for mac:" << from);
   Ptr<GroupFinder> gfApp = GroupFinder::GetGroupFinderApplication(node);
 
   if (!node || !gfApp)
@@ -383,7 +384,7 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
 
     gfApp->SetBindMag(m_targetAddress);
 
-  // 2: Only GLs can pass this point.
+  // 2: Only a GL can pass this point.
   if (!GroupFinder::IsEnabled() || is_non_gl)
       return;
   Ptr<Node> gl = node;
@@ -397,6 +398,7 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
 
 	  if (candidate == from)// skip myself
 		  continue;
+	  NS_LOG_UNCOND("GL" << gl->GetId() << " Binding " << candidate);
 	  NS_LOG_DEBUG("GL is: " << gl->GetId() << " HandleNewNode" );
 	  HandleNewNode(candidate, to, att, true);
   }
