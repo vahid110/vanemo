@@ -164,7 +164,8 @@ namespace containers
 	std::vector<NetDeviceContainer> apDevs;
 	std::vector<NetDeviceContainer> magBrDevs;
 
-	NetDeviceContainer mnnsDevs;
+	NetDeviceContainer mnnsExtDevs;
+	NetDeviceContainer mnnsIntDevs;
 	NetDeviceContainer leaderDev;
 	NetDeviceContainer followerDevs;
 
@@ -180,9 +181,13 @@ using namespace containers;
 
 void printMnnsDeviceInfor(const std::string &preface)
 {
-	  NS_LOG_UNCOND(preface << ".\nSTA  Devices:" << leader.Get(0)->GetNDevices() << " Interfaces:" << leader.Get(0)->GetObject<Ipv4> ()->GetNInterfaces());
-	  NS_LOG_UNCOND("MN1  Devices:" << followers.Get(0)->GetNDevices() << " Interfaces:" << followers.Get(0)->GetObject<Ipv4> ()->GetNInterfaces());
-	  NS_LOG_UNCOND("MN2  Devices:" << followers.Get(1)->GetNDevices() << " Interfaces:" << followers.Get(1)->GetObject<Ipv4> ()->GetNInterfaces());
+	NS_LOG_UNCOND("==================\nPrint " << preface << ":");
+	for (size_t i = 0; i < mnns.GetN (); i++)
+		if (mnns.Get(i)->GetObject<Ipv4> ())
+			NS_LOG_UNCOND("MNN" << i << " Devices:" << mnns.Get(i)->GetNDevices() << " Interfaces:" << mnns.Get(i)->GetObject<Ipv4> ()->GetNInterfaces());
+		else
+			NS_LOG_UNCOND("MNN" << i << " Devices:" << mnns.Get(i)->GetNDevices());
+	NS_LOG_UNCOND("==================");
 }
 
 const int backBoneCnt = 4;
@@ -198,6 +203,7 @@ void createNodes()
 	  cn.Create(1);
 	  mnns.Create(3);
 	  leader.Add(mnns.Get(0));
+	  NS_LOG_UNCOND("LEADER: " << mnns.Get(0)->GetId());
 	  for (size_t i = 1; i < mnns.GetN(); i++)
 		  followers.Add(mnns.Get(i));
 
@@ -255,11 +261,10 @@ Ptr<Pmipv6ProfileHelper> enableLMAProfiling()
 {
 	//LMA Profiling
 	Ptr<Pmipv6ProfileHelper> profile = Create<Pmipv6ProfileHelper> ();
-//	profile->AddProfile(Identifier(Mac48Address::ConvertFrom(leaderDev.Get(0)->GetAddress())), Identifier(Mac48Address::ConvertFrom(leaderDev.Get(0)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
-//	for(unsigned int i = 0; i < followerDevs.GetN(); i++)
-	for(unsigned int i = 0; i < mnnsDevs.GetN(); i++)
+	for(unsigned int i = 0; i < mnnsExtDevs.GetN(); i++)
 	{
-	  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(mnnsDevs.Get(i)->GetAddress())), Identifier(Mac48Address::ConvertFrom(mnnsDevs.Get(i)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
+	  NS_LOG_UNCOND("Profile add MNN:" << i << " :" << Mac48Address::ConvertFrom(mnnsExtDevs.Get(i)->GetAddress()));
+	  profile->AddProfile(Identifier(Mac48Address::ConvertFrom(mnnsExtDevs.Get(i)->GetAddress())), Identifier(Mac48Address::ConvertFrom(mnnsExtDevs.Get(i)->GetAddress())), backboneIfs.GetAddress(0, 1), std::list<Ipv6Address>());
 	}
 	return profile;
 }
@@ -303,8 +308,8 @@ void initGrpFinder()
 	GroupFinderHelper::SetEnable(true);
 	GroupFinderHelper gf;
 	//do settings
-//	gf.SetGroup(NetDeviceContainer(leaderDev, followerDevs));
-	gf.SetGroup(mnnsDevs);
+	gf.SetGroup(NetDeviceContainer(leaderDev, followerDevs));
+//	gf.SetGroup(mnnsExtDevs);
 	grpFinder = gf.Install(mnns);
 	grpFinder.Start (Seconds (startTime));
 	grpFinder.Stop (Seconds (endTime));
@@ -363,12 +368,12 @@ void initAnim(AnimationInterface &anim)
 void initPmip()
 {
 	Ptr<Pmipv6ProfileHelper> profile = enableLMAProfiling();
-	enableLMAProfiling();
+//	enableLMAProfiling();
 
 	//LMA Helper
 	NS_LOG_UNCOND("LMA Helper");
 	Pmipv6LmaHelper lmahelper;
-	lmahelper.SetPrefixPoolBase(Ipv6Address("3ffe:7:7::"), 48);
+	lmahelper.SetPrefixPoolBase(Ipv6Address("3ffe:6:6::"), 48);
 	lmahelper.SetProfileHelper(profile);
 	lmahelper.Install(lma.Get(0));
 
@@ -392,14 +397,17 @@ int main (int argc, char *argv[])
   SeedManager::SetSeed (123456);
 
   createNodes();
+
+  printMnnsDeviceInfor("After node creation");
   installInternetStack();
+  printMnnsDeviceInfor("After Installing Internet stack");
   NS_LOG_UNCOND("MAC Addresses:");
   assignMagMacAddresses();
-
+  printMnnsDeviceInfor("After MAC Address");
   NS_LOG_UNCOND("Outer Network:");
   CsmaHelper csmaLmaCn;
   initCsma(csmaLmaCn);
-
+  printMnnsDeviceInfor("After initCsma csmaLmaCn");
   Ipv6InterfaceContainer iifc;
 
   //Outer Dev CSMA and Addressing
@@ -411,10 +419,11 @@ int main (int argc, char *argv[])
   outerIfs.Add(iifc);
   outerIfs.SetForwarding(0, true);
   outerIfs.SetDefaultRouteInAllNodes(0);
-
+  printMnnsDeviceInfor("After lmaCnDevs");
   NS_LOG_UNCOND("LMA MAG Network:");
   CsmaHelper csmaLmaMag;
   initCsma(csmaLmaMag);
+  printMnnsDeviceInfor("After initCsma initCsma");
   //All Link is 50Mbps and 0.1ms delay
   //Backbone Addressing
   NS_LOG_UNCOND("Assign lmaMagNodes Addresses");
@@ -430,6 +439,7 @@ int main (int argc, char *argv[])
   }
   backboneIfs.SetForwarding(0, true);
   backboneIfs.SetDefaultRouteInAllNodes(0);
+  printMnnsDeviceInfor("After Assign lmaMagNodes Addresses");
 
   //Backbone Mobility
   Ptr<ListPositionAllocator> positionAlloc;
@@ -454,6 +464,7 @@ int main (int argc, char *argv[])
   }
   installConstantMobility(aps, positionAlloc);
 
+  printMnnsDeviceInfor("Before ANY Wifi Installation");
   //Wifi
   NS_LOG_UNCOND("MAG-AP Addresses:");
   Ssid ssid = Ssid("MAG");
@@ -497,7 +508,8 @@ int main (int argc, char *argv[])
 
   initMnnMobility();
 
-  NS_LOG_UNCOND("Create networks and assign MNN Addresses.");
+  printMnnsDeviceInfor("Before MNNs Wifi Installation");
+  NS_LOG_UNCOND("Create EXTERNAL networks and assign MNN Addresses.");
 
   //GL movement
   Ptr<ConstantVelocityMobilityModel> cvm = leader.Get(0)->GetObject<ConstantVelocityMobilityModel>();
@@ -506,88 +518,76 @@ int main (int argc, char *argv[])
   wifiMac.SetType ("ns3::StaWifiMac",
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
-  //
-  mnnsDevs = wifi.Install (wifiPhy, wifiMac, mnns);
-  leaderDev.Add(mnnsDevs.Get(0));
-  for (size_t i = 1; i < mnnsDevs.GetN(); i++)
-	  followerDevs.Add(mnnsDevs.Get(i));
-  //
-
-//  leaderDev.Add( wifi.Install (wifiPhy, wifiMac, leader));
-  NS_LOG_UNCOND("GL Mac Addresses: " << leaderDev.Get(0)->GetAddress());
-
-
-  //Mobile Addressing
-//  followerDevs.Add( wifi.Install (wifiPhy, wifiMac, followers));
-//  NetDeviceContainer mnnDevs(leaderDev, followerDevs);
-  iifc = AssignIpv6Addresses(mnnsDevs, Ipv6Address("3ffe:7:7:2::"), 64);
-  //MNN routing
+  mnnsExtDevs = wifi.Install (wifiPhy, wifiMac, mnns);
+  iifc = AssignIpv6Addresses(mnnsExtDevs, Ipv6Address("3ffe:6:6:1::"), 64);
   iifc.SetForwarding (0, true);
   iifc.SetDefaultRouteInAllNodes (0);
+  printMnnsDeviceInfor("After EXTERNAL MNNs StaWifi Installation");
+
+  leaderDev.Add(mnnsExtDevs.Get(0));
+  for (size_t i = 1; i < mnnsExtDevs.GetN(); i++)
+	  followerDevs.Add(mnnsExtDevs.Get(i));
+
+  NS_LOG_UNCOND("Create INTERNAL networks and assign MNN Addresses.");
+  //GL Wifi
+  wifiPhy.SetChannel (wifiChannel.Create ());
+  wifiMac.SetType ("ns3::AdhocWifiMac");
+  mnnsIntDevs = wifi.Install (wifiPhy, wifiMac, mnns);
+  iifc = AssignIpv6Addresses(mnnsIntDevs, Ipv6Address("3ffe:6:6:2::"), 64);
+  iifc.SetForwarding (0, true);
+  printMnnsDeviceInfor("After INTERNAL MNNs StaWifi Installation");
 
   //End addresses
-  Ipv6Address glAddress = mnnsDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
-  Ipv6Address mnn2Address = mnnsDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
+  Ipv6Address glExternalAddress = mnnsExtDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
+  Ipv6Address glInternalAddress = mnnsExtDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
+  Ipv6Address mnn2ExternalAddress = mnnsExtDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
 
 //  destAddress = glAddress;
 //  destNode = leader.Get(0);
-  destAddress = mnn2Address;
-  destNode = followers.Get(1);
+  destAddress = mnn2ExternalAddress;
+  destNode = mnns.Get(2);
 
-  NS_LOG_UNCOND("GL Address:" << glAddress);
-  NS_LOG_UNCOND("Mnn2 Address:" << mnn2Address);
+  NS_LOG_UNCOND("GL Address:" << glExternalAddress);
+  NS_LOG_UNCOND("Mnn2 Address:" << mnn2ExternalAddress);
   NS_LOG_UNCOND("Dest Address:" << destAddress);
   
   initPmip();
-  
-  //P2P
-  NS_LOG_UNCOND("P2P");
-  printMnnsDeviceInfor("P2P Before");
-  PointToPointHelper p2p;
-  p2p.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
-  p2p.SetChannelAttribute ("Delay", StringValue ("2ms"));
-  NodeContainer p2pNodes(leader, followers.Get(1));
-  NetDeviceContainer p2pDevs = p2p.Install(p2pNodes);
-  printMnnsDeviceInfor("P2P Install");
+  printMnnsDeviceInfor("After PMIP init");
+
+  NS_LOG_UNCOND("Routes");
+  //Routes From MAG
   Ptr<Ipv6> ipv6gl = leader.Get(0)->GetObject<Ipv6> ();
-  int32_t glP2pIfx = ipv6gl->AddInterface(p2pDevs.Get(0));
-  (void)glP2pIfx;
-
-  Ptr<Ipv6> ipv6mn2 = followers.Get(1)->GetObject<Ipv6> ();
-  int32_t mn2P2pIfx = ipv6mn2->AddInterface(p2pDevs.Get(1));
-  (void)mn2P2pIfx;
-  printMnnsDeviceInfor("P2P Interface");
-  AssignIpv6Addresses(p2pDevs, Ipv6Address("3ffe:4:4:4::"), 64);
-  printMnnsDeviceInfor("P2P Assign");
-  NS_LOG_UNCOND("P2P Addresses:");
-  int32_t t = ipv6gl->GetInterfaceForDevice(leader.Get(0)->GetDevice(2));
-  int32_t t1 = ipv6mn2->GetInterfaceForDevice(followers.Get(1)->GetDevice(2));
-  NS_LOG_UNCOND(ipv6gl->GetAddress(t, 1).GetAddress() << " --> " << ipv6mn2->GetAddress(t1, 1).GetAddress());
-
-  // Routes
   Ipv6StaticRoutingHelper ipv6RoutingHelper;
   Ptr<Ipv6StaticRouting> sr;
   int32_t next;
   next = ipv6gl->GetInterfaceForDevice(leader.Get(0)->GetDevice(1));
+  NS_LOG_UNCOND("next:" << next);
   for (int i = 1; i <= backBoneCnt; i++)
   {
 	  Ptr<Ipv6> ipv6mag =   lmaMagNodes.Get(i)->GetObject<Ipv6> ();
 	  sr = ipv6RoutingHelper.GetStaticRouting (ipv6mag);
 	  sr->AddHostRouteTo (destAddress, ipv6gl->GetAddress(next, 1).GetAddress(), 2);
-	  NS_LOG_UNCOND("MAG" << i << ": AddHostRouteTo: " << destAddress << " --> " << ipv6gl->GetAddress(next, 1).GetAddress() << " 2");
+	  NS_LOG_UNCOND("MAG:" << i << ": AddHostRouteTo: " << destAddress << " --> " << ipv6gl->GetAddress(next, 1).GetAddress() << " 2");
   }
-
+  //Routes From STA (GL)
   sr = ipv6RoutingHelper.GetStaticRouting (ipv6gl);
-  next = ipv6mn2->GetInterfaceForDevice(followers.Get(1)->GetDevice(2));
-  sr->AddHostRouteTo (destAddress, ipv6mn2->GetAddress(next, 1).GetAddress(), 2);
-  NS_LOG_UNCOND("GL: AddHostRouteTo: " << destAddress << " --> " << ipv6mn2->GetAddress(next, 1).GetAddress() << " 2");
+  Ptr<Ipv6> ip6Mnn1 = mnns.Get(1)->GetObject<Ipv6> ();
+  next = ip6Mnn1->GetInterfaceForDevice(mnns.Get(1)->GetDevice(2));
+  NS_LOG_UNCOND("next:" << next);
+  sr->AddHostRouteTo (destAddress, ip6Mnn1->GetAddress(next, 1).GetAddress(), 1);
+  NS_LOG_UNCOND("MNN0(GL): AddHostRouteTo: " << destAddress << " --> " << ip6Mnn1->GetAddress(next, 1).GetAddress() << " 1");
+  //Routes From relay node
+  sr = ipv6RoutingHelper.GetStaticRouting (ip6Mnn1);
+  Ptr<Ipv6> ip6Mnn2 = mnns.Get(2)->GetObject<Ipv6> ();
+  next = ip6Mnn2->GetInterfaceForDevice(mnns.Get(2)->GetDevice(2));
+  NS_LOG_UNCOND("next:" << next);
+  sr->AddHostRouteTo (destAddress, ip6Mnn2->GetAddress(next, 1).GetAddress(), 2);
+  NS_LOG_UNCOND("MNN1: AddHostRouteTo: " << destAddress << " --> " << ip6Mnn2->GetAddress(next, 1).GetAddress() << " 2");
 
-  p2p.EnablePcapAll ("p2p");
 
   //Pcap
   AsciiTraceHelper ascii;
-//  csmaLmaMag.EnableAsciiAll (ascii.CreateFileStream ("pmip6-wifi.tr"));
-//  csmaLmaMag.EnablePcapAll (std::string ("pmip6-csmaLmaMag"), false);
+
   csmaLmaMag.EnablePcap(std::string ("csma-lma-mag"), lmaMagDevs, false);
   csmaLmaMag.EnablePcap(std::string ("csma-lma-cn"), lmaCnDevs, false);
 
@@ -597,12 +597,13 @@ int main (int argc, char *argv[])
 	  csmaLmaMag.EnablePcap("csma-mag->ap", magApPairDevs[i].Get(0));
 	  csmaLmaMag.EnablePcap("csma-ap", magApPairDevs[i].Get(1));
   }
-  wifiPhy.EnablePcap ("wifi-leader", leaderDev.Get(0));
-  wifiPhy.EnablePcap ("wifi-mnn", mnnsDevs.Get(2));
+
+  wifiPhy.EnablePcap ("wifi-ext-mnns", mnnsExtDevs);
+  wifiPhy.EnablePcap ("wifi-int-mnns", mnnsIntDevs);
 
   NS_LOG_UNCOND("Installing SENSOR");
 
-  initVelocitySensor(5.0);
+  initVelocitySensor(1.0);
 
   NS_LOG_UNCOND("Installing GRP FINDER");
   initGrpFinder();
