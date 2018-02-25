@@ -29,6 +29,7 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "ns3/trace-source-accessor.h"
 
 #include "udp-echo-server.h"
 
@@ -48,6 +49,9 @@ UdpEchoServer::GetTypeId (void)
                    UintegerValue (9),
                    MakeUintegerAccessor (&UdpEchoServer::m_port),
                    MakeUintegerChecker<uint16_t> ())
+	.AddTraceSource ("Rx", "A new packet is received",
+					 MakeTraceSourceAccessor (&UdpEchoServer::m_rxTrace),
+					 "ns3::Packet::TracedCallback")
   ;
   return tid;
 }
@@ -55,6 +59,7 @@ UdpEchoServer::GetTypeId (void)
 UdpEchoServer::UdpEchoServer ()
 {
   NS_LOG_FUNCTION (this);
+  m_received = 0;
 }
 
 UdpEchoServer::~UdpEchoServer()
@@ -160,6 +165,9 @@ UdpEchoServer::HandleRead (Ptr<Socket> socket)
                        Inet6SocketAddress::ConvertFrom (from).GetIpv6 () << " port " <<
                        Inet6SocketAddress::ConvertFrom (from).GetPort ());
         }
+
+      m_rxTrace (packet);
+      ++ m_received;
 
       packet->RemoveAllPacketTags ();
       packet->RemoveAllByteTags ();
