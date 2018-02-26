@@ -54,6 +54,7 @@ HwmpProtocolMac::SetParent (Ptr<MeshWifiInterfaceMac> parent)
 bool
 HwmpProtocolMac::ReceiveData (Ptr<Packet> packet, const WifiMacHeader & header)
 {
+	NS_LOG_FUNCTION_NOARGS ();
   NS_ASSERT (header.IsData ());
 
   MeshHeader meshHdr;
@@ -95,6 +96,7 @@ HwmpProtocolMac::ReceiveData (Ptr<Packet> packet, const WifiMacHeader & header)
 bool
 HwmpProtocolMac::ReceiveAction (Ptr<Packet> packet, const WifiMacHeader & header)
 {
+	NS_LOG_FUNCTION_NOARGS ();
   m_stats.rxMgt++;
   m_stats.rxMgtBytes += packet->GetSize ();
   WifiActionHeader actionHdr;
@@ -168,24 +170,22 @@ HwmpProtocolMac::Receive (Ptr<Packet> packet, const WifiMacHeader & header)
 {
   if (header.IsData ())
     {
+		NS_LOG_FUNCTION(" data");
       return ReceiveData (packet, header);
     }
-  else
-    {
-      if (header.IsAction ())
-        {
-          return ReceiveAction (packet, header);
-        }
-      else
-        {
-          return true; // don't care
-        }
-    }
+  else if (header.IsAction ())
+	{
+		NS_LOG_FUNCTION(" action");
+	  return ReceiveAction (packet, header);
+	}
+  NS_LOG_FUNCTION(" dont care: header[" << header << "] packet[" << packet << "]");
+  return true; // don't care
 }
 bool
 HwmpProtocolMac::UpdateOutcomingFrame (Ptr<Packet> packet, WifiMacHeader & header, Mac48Address from,
                                        Mac48Address to)
 {
+	NS_LOG_FUNCTION_NOARGS ();
   if (!header.IsData ())
     {
       return true;
@@ -208,6 +208,7 @@ HwmpProtocolMac::UpdateOutcomingFrame (Ptr<Packet> packet, WifiMacHeader & heade
 WifiActionHeader
 HwmpProtocolMac::GetWifiActionHeader ()
 {
+	NS_LOG_FUNCTION_NOARGS ();
   WifiActionHeader actionHdr;
   WifiActionHeader::ActionValue action;
   action.pathSelection = WifiActionHeader::PATH_SELECTION;
@@ -225,6 +226,7 @@ HwmpProtocolMac::SendPreq (IePreq preq)
 void
 HwmpProtocolMac::SendPreq (std::vector<IePreq> preq)
 {
+	NS_LOG_FUNCTION_NOARGS ();
   Ptr<Packet> packet = Create<Packet> ();
   MeshInformationElementVector elements;
   for (std::vector<IePreq>::iterator i = preq.begin (); i != preq.end (); i++)
@@ -375,6 +377,7 @@ void
 HwmpProtocolMac::InitiatePerr (std::vector<HwmpProtocol::FailedDestination> failedDestinations, std::vector<
                                  Mac48Address> receivers)
 {
+	NS_LOG_FUNCTION_NOARGS ();
   //All duplicates in PERR are checked here, and there is no reason to
   //check it at any athoer place
   {
