@@ -159,6 +159,12 @@ MeshWifiInterfaceMac::AssignStreams (int64_t stream)
   return (currentStream - stream);
 }
 
+void MeshWifiInterfaceMac::SetRecvCb(const MeshMacReceiveCallback &cb)
+{
+//	m_rxCb = cb;
+	(void) m_rxCb;
+}
+
 //-----------------------------------------------------------------------------
 // Plugins
 //-----------------------------------------------------------------------------
@@ -422,6 +428,7 @@ MeshWifiInterfaceMac::Receive (Ptr<Packet> packet, WifiMacHeader const *hdr)
     {
       return;
     }
+  m_rxCb(packet, hdr);
   if (hdr->IsBeacon ())
     {
       m_stats.recvBeacons++;

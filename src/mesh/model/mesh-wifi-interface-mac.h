@@ -40,6 +40,8 @@ namespace ns3 {
 class WifiMacHeader;
 class DcaTxop;
 class UniformRandomVariable;
+
+typedef Callback<void ,Ptr<Packet>, WifiMacHeader const *> MeshMacReceiveCallback;
 /**
  * \ingroup mesh
  *
@@ -143,6 +145,7 @@ public:
    * \return the number of stream indices assigned by this model
    */
   int64_t AssignStreams (int64_t stream);
+  void SetRecvCb(const MeshMacReceiveCallback &cb);
 private:
   /// Frame receive handler
   void  Receive (Ptr<Packet> packet, WifiMacHeader const *hdr);
@@ -203,6 +206,7 @@ private:
 
   /// Add randomness to beacon generation
   Ptr<UniformRandomVariable> m_coefficient;
+  MeshMacReceiveCallback m_rxCb;
 };
 
 } // namespace ns3

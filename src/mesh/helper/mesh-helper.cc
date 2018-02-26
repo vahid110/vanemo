@@ -178,6 +178,7 @@ MeshHelper::CreateInterface (const WifiPhyHelper &phyHelper, Ptr<Node> node, uin
   Ptr<MeshWifiInterfaceMac> mac = m_mac.Create<MeshWifiInterfaceMac> ();
   NS_ASSERT (mac != 0);
   mac->SetSsid (Ssid ());
+  mac->SetRecvCb(m_rxCb);
   Ptr<WifiRemoteStationManager> manager = m_stationManager.Create<WifiRemoteStationManager> ();
   NS_ASSERT (manager != 0);
   Ptr<WifiPhy> phy = phyHelper.Create (node, device);
@@ -274,6 +275,16 @@ MeshHelper::AssignStreams (NetDeviceContainer c, int64_t stream)
         }
     }
   return (currentStream - stream);
+}
+
+void MeshHelper::SetRecvCb(const MeshMacReceiveCallback &cb)
+{
+	m_rxCb = cb;
+}
+
+const MeshMacReceiveCallback& MeshHelper::GetRecvCb()
+{
+	return m_rxCb;
 }
 
 } // namespace ns3

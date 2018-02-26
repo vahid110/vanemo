@@ -25,6 +25,7 @@
 
 #include "ns3/wifi-helper.h"
 #include "ns3/mesh-stack-installer.h"
+#include "ns3/mesh-wifi-interface-mac.h"
 
 namespace ns3 {
 
@@ -203,6 +204,8 @@ public:
    * \return the number of stream indices assigned by this helper
    */
   int64_t AssignStreams (NetDeviceContainer c, int64_t stream);
+  void SetRecvCb(const MeshMacReceiveCallback &cb);
+  const MeshMacReceiveCallback& GetRecvCb();
 
 private:
   /**
@@ -218,6 +221,7 @@ private:
   ObjectFactory m_mac;
   ObjectFactory m_stationManager;
   enum WifiPhyStandard m_standard;
+  MeshMacReceiveCallback m_rxCb;
 
 };
 } // namespace ns3
