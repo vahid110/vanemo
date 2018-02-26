@@ -44,7 +44,9 @@ HwmpRtable::GetTypeId ()
 }
 HwmpRtable::HwmpRtable ()
 {
+  NS_LOG_FUNCTION(this);
   DeleteProactivePath ();
+  SchedulePrint();
 }
 HwmpRtable::~HwmpRtable ()
 {
@@ -58,12 +60,18 @@ void
 HwmpRtable::AddReactivePath (Mac48Address destination, Mac48Address retransmitter, uint32_t interface,
                              uint32_t metric, Time lifetime, uint32_t seqnum)
 {
+	NS_LOG_FUNCTION_NOARGS ();
   std::map<Mac48Address, ReactiveRoute>::iterator i = m_routes.find (destination);
   if (i == m_routes.end ())
     {
+	  NS_LOG_FUNCTION(this << " New. Dest:" << destination << " retrnsmtr:" << retransmitter << " intrfc:" << interface << " liftim:" << lifetime);
       ReactiveRoute newroute;
       m_routes[destination] = newroute;
     }
+  else
+  {
+	  NS_LOG_FUNCTION(this << " Update. Dest:" << destination << " retrnsmtr:" << retransmitter << " intrfc:" << interface << " liftim:" << lifetime);
+  }
   i = m_routes.find (destination);
   NS_ASSERT (i != m_routes.end ());
   i->second.retransmitter = retransmitter;
@@ -76,6 +84,8 @@ void
 HwmpRtable::AddProactivePath (uint32_t metric, Mac48Address root, Mac48Address retransmitter,
                               uint32_t interface, Time lifetime, uint32_t seqnum)
 {
+	NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_FUNCTION(this << " root:" << root << " retrnsmtr:" << retransmitter << " intrfc:" << interface << " liftim:" << lifetime);
   m_root.root = root;
   m_root.retransmitter = retransmitter;
   m_root.metric = metric;
@@ -87,6 +97,8 @@ void
 HwmpRtable::AddPrecursor (Mac48Address destination, uint32_t precursorInterface,
                           Mac48Address precursorAddress, Time lifetime)
 {
+	NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_FUNCTION(this << " dest:" << destination << " precursorAddress:" << precursorAddress << " liftim:" << lifetime);
   Precursor precursor;
   precursor.interface = precursorInterface;
   precursor.address = precursorAddress;
@@ -115,6 +127,8 @@ HwmpRtable::AddPrecursor (Mac48Address destination, uint32_t precursorInterface,
 void
 HwmpRtable::DeleteProactivePath ()
 {
+	NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_FUNCTION(this);
   m_root.precursors.clear ();
   m_root.interface = INTERFACE_ANY;
   m_root.metric = MAX_METRIC;
@@ -125,6 +139,8 @@ HwmpRtable::DeleteProactivePath ()
 void
 HwmpRtable::DeleteProactivePath (Mac48Address root)
 {
+	NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_FUNCTION(this << " root:" << root);
   if (m_root.root == root)
     {
       DeleteProactivePath ();
@@ -133,6 +149,8 @@ HwmpRtable::DeleteProactivePath (Mac48Address root)
 void
 HwmpRtable::DeleteReactivePath (Mac48Address destination)
 {
+	NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_FUNCTION(this << " dest:" << destination);
   std::map<Mac48Address, ReactiveRoute>::iterator i = m_routes.find (destination);
   if (i != m_routes.end ())
     {
@@ -142,9 +160,12 @@ HwmpRtable::DeleteReactivePath (Mac48Address destination)
 HwmpRtable::LookupResult
 HwmpRtable::LookupReactive (Mac48Address destination)
 {
+  NS_LOG_FUNCTION(this << " dest:" << destination);
+
   std::map<Mac48Address, ReactiveRoute>::iterator i = m_routes.find (destination);
   if (i == m_routes.end ())
     {
+	  NS_LOG_LOGIC("Nothing for dest:" << destination);
       return LookupResult ();
     }
   if ((i->second.whenExpire < Simulator::Now ()) && (i->second.whenExpire != Seconds (0)))
@@ -157,17 +178,24 @@ HwmpRtable::LookupReactive (Mac48Address destination)
 HwmpRtable::LookupResult
 HwmpRtable::LookupReactiveExpired (Mac48Address destination)
 {
+	NS_LOG_FUNCTION_NOARGS ();
+  NS_LOG_FUNCTION(this << " dest:" << destination);
   std::map<Mac48Address, ReactiveRoute>::iterator i = m_routes.find (destination);
   if (i == m_routes.end ())
     {
+	  NS_LOG_LOGIC("Nothing for dest:" << destination);
       return LookupResult ();
     }
-  return LookupResult (i->second.retransmitter, i->second.interface, i->second.metric, i->second.seqnum,
+  LookupResult result (i->second.retransmitter, i->second.interface, i->second.metric, i->second.seqnum,
                        i->second.whenExpire - Simulator::Now ());
+  NS_LOG_LOGIC("For dest(" << destination << " returning => " << result);
+  return result;
 }
 HwmpRtable::LookupResult
 HwmpRtable::LookupProactive ()
 {
+	NS_LOG_FUNCTION_NOARGS ();
+	NS_LOG_FUNCTION(this);
   if (m_root.whenExpire < Simulator::Now ())
     {
       NS_LOG_DEBUG ("Proactive route has expired and will be deleted, sorry.");
@@ -178,12 +206,16 @@ HwmpRtable::LookupProactive ()
 HwmpRtable::LookupResult
 HwmpRtable::LookupProactiveExpired ()
 {
+	NS_LOG_FUNCTION_NOARGS ();
+	NS_LOG_FUNCTION(this);
   return LookupResult (m_root.retransmitter, m_root.interface, m_root.metric, m_root.seqnum,
                        m_root.whenExpire - Simulator::Now ());
 }
 std::vector<HwmpProtocol::FailedDestination>
 HwmpRtable::GetUnreachableDestinations (Mac48Address peerAddress)
 {
+	NS_LOG_FUNCTION_NOARGS ();
+	NS_LOG_FUNCTION(this);
   HwmpProtocol::FailedDestination dst;
   std::vector<HwmpProtocol::FailedDestination> retval;
   for (std::map<Mac48Address, ReactiveRoute>::iterator i = m_routes.begin (); i != m_routes.end (); i++)
@@ -205,9 +237,29 @@ HwmpRtable::GetUnreachableDestinations (Mac48Address peerAddress)
     }
   return retval;
 }
+
+void HwmpRtable::PrintReactiveRoutes()
+{
+	NS_LOG_LOGIC(m_routes);
+}
+
+void HwmpRtable::PrintProActiveRoutes()
+{
+	NS_LOG_LOGIC(m_root);
+}
+void HwmpRtable::SchedulePrint()
+{
+	Simulator::Schedule (Seconds (1), &HwmpRtable::SchedulePrint, this);
+	NS_LOG_FUNCTION_NOARGS ();
+	PrintProActiveRoutes();
+	PrintReactiveRoutes();
+}
+
 HwmpRtable::PrecursorList
 HwmpRtable::GetPrecursors (Mac48Address destination)
 {
+	NS_LOG_FUNCTION_NOARGS ();
+	NS_LOG_FUNCTION(this);
   //We suppose that no duplicates here can be
   PrecursorList retval;
   std::map<Mac48Address, ReactiveRoute>::iterator route = m_routes.find (destination);
@@ -240,5 +292,70 @@ HwmpRtable::LookupResult::IsValid () const
   return !(retransmitter == Mac48Address::GetBroadcast () && ifIndex == INTERFACE_ANY && metric == MAX_METRIC
            && seqnum == 0);
 }
+
+std::ostream & operator << (std::ostream &os, const HwmpRtable::LookupResult &value)
+{
+	os << "retransmitter:" << value.retransmitter << " ifIndex:" << value.ifIndex << "metric:" << value.metric << " seqnum:" << value.seqnum << " lifetime:" << value.lifetime;
+	return os;
+}
+
+
+std::ostream & operator << (std::ostream &os, const HwmpRtable::Precursor &value)
+{
+	os << "[add:" <<  value.address << ", ifc:" << value.interface << ", exp:" << value.whenExpire << "]" ;
+	return os;
+}
+
+std::ostream & operator << (std::ostream &os, const HwmpRtable::ReactiveRoute &value)
+{
+	os << "ReactiveRoute:\n" <<
+	      " retransmitter:" << value.retransmitter << "\n" <<
+	      " interface:" << value.interface <<"\n" <<
+		  " metric:" << value.metric <<"\n" <<
+		  " expire:" << value.whenExpire <<"\n" <<
+		  " seqnum:" << value.seqnum << "\n" <<
+		  " Precursors:\n";
+	if (value.precursors.empty())
+		os << " empty";
+	else
+	{
+		for (size_t i= 0; i < value.precursors.size(); i++)
+			os << value.precursors[i] << " | ";
+	}
+	return os;
+}
+
+std::ostream & operator << (std::ostream &os, const HwmpRtable::ProactiveRoute &value)
+{
+	os << "ProactiveRoute:\n" <<
+		  " root:" << value.root << "\n" <<
+	      " retransmitter:" << value.retransmitter << "\n" <<
+	      " interface:" << value.interface <<"\n" <<
+		  " metric:" << value.metric <<"\n" <<
+		  " expire:" << value.whenExpire <<"\n" <<
+		  " seqnum:" << value.seqnum << "\n" <<
+		  " Precursors:\n";
+	if (value.precursors.empty())
+		os << " empty";
+	else
+	{
+		for (size_t i= 0; i < value.precursors.size(); i++)
+			os << value.precursors[i] << " | ";
+	}
+	return os;
+}
+
+std::ostream & operator << (std::ostream &os, const HwmpRtable::ReactiveRouteMap &value)
+{
+	os << "ReactiveMap(:" << value.size() << ")\n";
+	if (value.empty())
+		os << "Empty";
+	for (HwmpRtable::ReactiveRouteMap::const_iterator it(value.begin()); it != value.end(); it++)
+			os << it->first << "-> " << it->second;
+	return os;
+}
+
+
+
 } // namespace dot11s
 } // namespace ns3

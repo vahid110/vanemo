@@ -106,8 +106,11 @@ public:
 
   /// When peer link with a given MAC-address fails - it returns list of unreachable destination addresses
   std::vector<HwmpProtocol::FailedDestination> GetUnreachableDestinations (Mac48Address peerAddress);
+  void PrintReactiveRoutes();
+  void PrintProActiveRoutes();
+  void SchedulePrint();
 
-private:
+
   /// Route found in reactive mode
   struct Precursor
   {
@@ -127,6 +130,14 @@ private:
   /// Route fond in proactive mode
   struct ProactiveRoute
   {
+	ProactiveRoute():
+		root(),
+		retransmitter(),
+		interface(0),
+		metric(0),
+		whenExpire(),
+	    seqnum(0)
+	{}
     Mac48Address root;
     Mac48Address retransmitter;
     uint32_t interface;
@@ -135,12 +146,20 @@ private:
     uint32_t seqnum;
     std::vector<Precursor> precursors;
   };
-
+  typedef std::map<Mac48Address, ReactiveRoute> ReactiveRouteMap;
+private:
   /// List of routes
   std::map<Mac48Address, ReactiveRoute>  m_routes;
   /// Path to proactive tree root MP
   ProactiveRoute  m_root;
 };
+
+std::ostream & operator << (std::ostream &os, const HwmpRtable::LookupResult &value);
+std::ostream & operator << (std::ostream &os, const HwmpRtable::Precursor &value);
+std::ostream & operator << (std::ostream &os, const HwmpRtable::ReactiveRoute &value);
+std::ostream & operator << (std::ostream &os, const HwmpRtable::ProactiveRoute &value);
+std::ostream & operator << (std::ostream &os, const HwmpRtable::ReactiveRouteMap &value);
+
 } // namespace dot11s
 } // namespace ns3
 #endif
