@@ -70,6 +70,9 @@ MeshWifiInterfaceMac::GetTypeId ()
                       &MeshWifiInterfaceMac::SetBeaconGeneration, &MeshWifiInterfaceMac::GetBeaconGeneration),
                     MakeBooleanChecker ()
                     )
+//	.AddTraceSource ("RxMeshMac", "A new packet is created and is sent",
+//					 MakeTraceSourceAccessor (&MeshWifiInterfaceMac::m_rxCb),
+//					 "ns3::MeshMacReceiveCallback")
   ;
   return tid;
 }
@@ -161,8 +164,7 @@ MeshWifiInterfaceMac::AssignStreams (int64_t stream)
 
 void MeshWifiInterfaceMac::SetRecvCb(const MeshMacReceiveCallback &cb)
 {
-//	m_rxCb = cb;
-	(void) m_rxCb;
+	m_rxCb = cb;
 }
 
 //-----------------------------------------------------------------------------
@@ -428,7 +430,8 @@ MeshWifiInterfaceMac::Receive (Ptr<Packet> packet, WifiMacHeader const *hdr)
     {
       return;
     }
-  m_rxCb(packet, hdr);
+  if (!m_rxCb.IsNull())
+	  m_rxCb(packet, hdr);
   if (hdr->IsBeacon ())
     {
       m_stats.recvBeacons++;
