@@ -26,7 +26,8 @@
 #include "ns3/propagation-loss-model.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/ipv6-static-routing-helper.h"
-
+#include "ns3/mesh-module.h"
+#include "ns3/mesh-helper.h"
 
 #include "ns3/ipv6-static-routing.h"
 #include "ns3/ipv6-static-source-routing.h"
@@ -34,6 +35,7 @@
 #include "ns3/netanim-module.h"
 #include "ns3/group-finder-helper.h"
 #include "ns3/velocity-sensor-helper.h"
+#include "ns3/mesh-helper.h"
 #include "ns3/ns2-mobility-helper.h"
 
 #include <iostream>
@@ -45,6 +47,245 @@
 NS_LOG_COMPONENT_DEFINE ("Pmipv6Wifi");
 
 using namespace ns3;
+namespace containers
+{
+	NodeContainer mnns;
+	NodeContainer leader;
+	NodeContainer followers;
+	NodeContainer cn;
+	NodeContainer lmaMagNodes;
+	NodeContainer aps;
+
+	//ref nodes
+	NodeContainer lma;
+	NodeContainer mags;
+	NodeContainer lmaCnNodes;
+	std::vector<NodeContainer> magApPairNodes;
+	//MAC Address for MAGs
+	std::vector<Mac48Address> magMacAddrs;
+
+	NetDeviceContainer lmaMagDevs;
+	NetDeviceContainer lmaCnDevs;
+	std::vector<NetDeviceContainer> magApPairDevs;
+	std::vector<NetDeviceContainer> apDevs;
+	std::vector<NetDeviceContainer> magBrDevs;
+
+	NetDeviceContainer mnnsExtDevs;
+	NetDeviceContainer mnnsIntDevs;
+	NetDeviceContainer leaderDev;
+	NetDeviceContainer followerDevs;
+
+	Ipv6InterfaceContainer backboneIfs;
+	Ipv6InterfaceContainer outerIfs;
+
+	std::vector<Ipv6InterfaceContainer> magIfs;
+
+	Ipv6InterfaceContainer glIfs;
+	Ipv6InterfaceContainer grpIfs;
+//	AnimationInterface anim("PMIPv6_TRACE.xml");//todo
+	std::ofstream mobilityLogStream;
+}
+using namespace containers;
+
+Ipv6InterfaceContainer ASSIGN_SingleIpv6Address(Ptr<NetDevice> device, Ipv6Address addr, Ipv6Prefix prefix);
+Ipv6InterfaceContainer ASSIGN_Ipv6Addresses(NetDeviceContainer devices, Ipv6Address network, Ipv6Prefix prefix);
+Ipv6InterfaceContainer ASSIGN_WithoutAddress(Ptr<NetDevice> device);
+void LOG_Settings();
+void INSTALL_ConstantMobility(NodeContainer &nc, Ptr<ListPositionAllocator> positionAlloc);
+void PRINIT_MNNs_DeviceInfor(const std::string &preface);
+void INIT_MobilityTracing();
+
+void EchoTx1(Ptr< const Packet > p);
+void EchoRx1(Ptr< const Packet > p);
+void MacRx1(Ptr<Packet> packet, WifiMacHeader const *hdr);
+void CourseChange (std::ostream *os, Ptr<const MobilityModel> mobility);
+
+struct VanemoConfig
+{
+	VanemoConfig() :
+		m_totalTime (0),
+		m_packetInterval (0),
+		m_packetSize (0),
+		m_randomStart (0),
+		m_nIfaces (0),
+		m_chan (false),
+		m_pcap (false),
+		m_stack (""),
+		m_root ("")
+	{}
+
+	VanemoConfig(int argc, char *argv[]) :
+		m_totalTime (100.0),
+		m_packetInterval (0.1),
+		m_packetSize (1024),
+		m_randomStart (1.0),
+		m_nIfaces (1),
+		m_chan (true),
+		m_pcap (false),
+		m_stack ("ns3::Dot11sStack"),
+		m_root ("ff:ff:ff:ff:ff:ff")
+	{
+		CommandLine cmd;
+		cmd.AddValue ("time",  "Simulation time (sec)", m_totalTime);
+		cmd.AddValue ("packet-interval",  "Interval between packets in UDP ping (sec)", m_packetInterval);
+		cmd.AddValue ("packet-size",  "Size of packets in UDP ping (bytes)", m_packetSize);
+		cmd.AddValue ("start",  "Maximum random start delay for beacon jitter (sec)", m_randomStart);
+		cmd.AddValue ("interfaces", "Number of radio interfaces used by each mesh point", m_nIfaces);
+		cmd.AddValue ("channels",   "Use different frequency channels for different interfaces", m_chan);
+		cmd.AddValue ("pcap",   "Enable PCAP traces on interfaces", m_pcap);
+		cmd.AddValue ("stack",  "Type of protocol stack. ns3::Dot11sStack by default", m_stack);
+		cmd.AddValue ("root", "Mac address of root mesh point in HWMP", m_root);
+		cmd.Parse (argc, argv);
+	}
+
+	double    m_totalTime;
+	//App settings
+	double    m_packetInterval;
+	uint16_t  m_packetSize;
+	//Mesh Settings
+	double    m_randomStart;
+	uint32_t  m_nIfaces;
+	bool      m_chan;
+	bool      m_pcap;
+	std::string m_stack;
+	std::string m_root;
+};
+
+VanemoConfig script_cfg;
+
+struct EchoApp
+{
+	EchoApp()
+	{}
+
+	void Setup (NodeContainer &nodes, Ipv4InterfaceContainer &interfaces)
+	{
+		NS_ASSERT_MSG(nodes.GetN() > 1,
+				      "No nodes to install Echo Application on.");
+		NS_ASSERT_MSG(nodes.GetN() == interfaces.GetN(),
+					  "Node and ip interface counts do not match: " <<
+					  nodes.GetN() << "/" << interfaces.GetN());
+		uint32_t serverNode = 0, clientNode = nodes.GetN() - 1;
+		UdpEchoServerHelper echoServer (9);
+		ApplicationContainer serverApps = echoServer.Install (nodes.Get (serverNode));
+		serverApps.Start (Seconds (1.5));
+		serverApps.Stop (Seconds (script_cfg.m_totalTime));
+		UdpEchoClientHelper echoClient (interfaces.GetAddress (serverNode), 9);
+		echoClient.SetAttribute ("MaxPackets", UintegerValue ((uint32_t)(script_cfg.m_totalTime*(1/script_cfg.m_packetInterval))));
+		echoClient.SetAttribute ("Interval", TimeValue (Seconds (script_cfg.m_packetInterval)));
+		echoClient.SetAttribute ("PacketSize", UintegerValue (script_cfg.m_packetSize));
+		ApplicationContainer clientApps = echoClient.Install (nodes.Get (clientNode));
+		clientApps.Start (Seconds (2.0));
+		clientApps.Stop (Seconds (script_cfg.m_totalTime));
+		//todo
+//		Config::ConnectWithoutContext("/NodeList/*/ApplicationList/*/$ns3::UdpEchoClient/Tx", MakeCallback(&EchoTx1));
+//		Config::ConnectWithoutContext("/NodeList/*/ApplicationList/*/$ns3::UdpEchoServer/Rx", MakeBoundCallback(&EchoRx1));
+	}
+};
+
+class MeshSetup
+{
+public:
+MeshSetup(NodeContainer &nodes) :
+  m_meshNodes (nodes)
+{}
+
+
+Ipv4InterfaceContainer& GetIpInterfaces()
+{
+	return m_ipInterfaces;
+}
+
+void Setup ()
+{
+	YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default ();
+	YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
+	wifiPhy.SetChannel (wifiChannel.Create ());
+	mesh = MeshHelper::Default ();
+	if (!Mac48Address (script_cfg.m_root.c_str ()).IsBroadcast ())
+	{
+	  mesh.SetStackInstaller (script_cfg.m_stack, "Root", Mac48AddressValue (Mac48Address (script_cfg.m_root.c_str ())));
+	}
+	else
+	{
+	  mesh.SetStackInstaller (script_cfg.m_stack);
+	}
+	if (script_cfg.m_chan)
+	{
+	  mesh.SetSpreadInterfaceChannels (MeshHelper::SPREAD_CHANNELS);
+	}
+	else
+	{
+	  mesh.SetSpreadInterfaceChannels (MeshHelper::ZERO_CHANNEL);
+	}
+	mesh.SetMacType ("RandomStart", TimeValue (Seconds (script_cfg.m_randomStart)));
+	mesh.SetNumberOfInterfaces (script_cfg.m_nIfaces);
+	meshDevices = mesh.Install (wifiPhy, m_meshNodes);
+
+	for (uint32_t i = 0; i < meshDevices.GetN(); ++i)
+	{
+	  Ptr<MeshPointDevice> device = DynamicCast<MeshPointDevice>(meshDevices.Get(i));
+	  NS_ASSERT (device != 0);
+
+	  std::vector<Ptr<NetDevice> > innerDevices = device->GetInterfaces ();
+	  for (std::vector<Ptr<NetDevice> >::iterator i = innerDevices.begin (); i != innerDevices.end (); i++)
+		{
+		  Ptr<WifiNetDevice> wifiNetDev = (*i)->GetObject<WifiNetDevice> ();
+		  if (wifiNetDev == 0)
+			{
+			  continue;
+			}
+		  Ptr<MeshWifiInterfaceMac> mac = wifiNetDev->GetMac ()->GetObject<MeshWifiInterfaceMac> ();
+		  if (mac == 0)
+			{
+			  continue;
+			}
+		  mac->SetRecvCb(MakeCallback(&MacRx1));
+		}
+	}
+	//IP Addressing
+	IpAddressing ();
+	//pcap
+	if (script_cfg.m_pcap)
+		wifiPhy.EnablePcapAll (std::string ("mp-"));
+}
+
+private:
+void IpAddressing ()
+{
+  Ipv4AddressHelper address;
+  address.SetBase ("10.1.1.0", "255.255.255.0");
+  m_ipInterfaces = address.Assign (meshDevices);
+  for (uint32_t i = 0; i < m_ipInterfaces.GetN(); i++)
+	  NS_LOG_UNCOND("aDDED " << m_ipInterfaces.GetAddress (i) << " " << meshDevices.Get(i)->GetAddress());
+}
+
+void Report ()
+{
+  unsigned n (0);
+  for (NetDeviceContainer::Iterator i = meshDevices.Begin (); i != meshDevices.End (); ++i, ++n)
+    {
+      std::ostringstream os;
+      os << "mp-report-" << n << ".xml";
+      std::cerr << "Printing mesh point device #" << n << " diagnostics to " << os.str () << "\n";
+      std::ofstream of;
+      of.open (os.str ().c_str ());
+      if (!of.is_open ())
+        {
+          std::cerr << "Error: Can't open file " << os.str () << "\n";
+          return;
+        }
+      mesh.Report (*i, of);
+      of.close ();
+    }
+}
+private:
+  NodeContainer &m_meshNodes;
+  Ipv4InterfaceContainer m_ipInterfaces;
+  MeshHelper mesh;
+  NetDeviceContainer meshDevices;
+
+};// MeshSetUp
 
 Ipv6InterfaceContainer ASSIGN_SingleIpv6Address(Ptr<NetDevice> device, Ipv6Address addr, Ipv6Prefix prefix)
 {
@@ -122,8 +363,7 @@ void LOG_Settings()
 	//  LogLevel logAll = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_ALL);
 	//  LogLevel logLogic = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_LOGIC);
 	//  LogLevel logInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO);
-	    LogLevel logDbg = static_cast<LogLevel>(LOG_LEVEL_DEBUG);
-	    (void)logDbg;
+//	    LogLevel logDbg = static_cast<LogLevel>(LOG_LEVEL_DEBUG);
 	//  LogComponentEnable ("Udp6Server", logInfo);
 	//  LogComponentEnable ("Pmipv6Agent", logAll);
 	//  LogComponentEnable ("Pmipv6MagNotifier", logAll);
@@ -132,6 +372,33 @@ void LOG_Settings()
 	//  LogComponentEnable ("Pmipv6Mag", logDbg);
 	    LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	    LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
+
+		//  LogLevel logInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO);
+		LogLevel logLogicFunctionInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_LOGIC | LOG_LEVEL_INFO | LOG_LEVEL_FUNCTION);
+		LogLevel logFunctionInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO | LOG_LEVEL_FUNCTION);
+		LogLevel logInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO);
+		(void) logLogicFunctionInfo;
+		(void) logFunctionInfo;
+		(void) logInfo;
+	//    LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
+	//    LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
+	//    LogComponentEnable ("Ipv4Interface", LOG_LEVEL_LOGIC);
+	//    LogComponentEnable ("Ipv6Interface", LOG_LEVEL_LOGIC);
+
+	    LogComponentEnable ("UdpEchoClientApplication", logInfo);
+	    LogComponentEnable ("UdpEchoServerApplication", logInfo);
+	//    LogComponentEnable ("Ipv4Interface", logLogicFunctionInfo);
+	//    LogComponentEnable ("Ipv6Interface", logLogicFunctionInfo);
+	//    LogComponentEnable ("Icmpv6L4Protocol", logLogicFunctionInfo);
+	//    LogComponentEnable ("Ipv6L3Protocol", logLogicFunctionInfo);
+	//    LogComponentEnable ("Ipv6StaticRouting", logLogicFunctionInfo);
+	//    LogComponentEnable ("NdiscCache", logLogicFunctionInfo);
+	    LogComponentEnable ("HwmpProtocol", logLogicFunctionInfo);
+	    LogComponentEnable ("HwmpRtable", logLogicFunctionInfo);
+	    LogComponentEnable ("HwmpProtocolMac", logLogicFunctionInfo);
+	//    LogComponentEnable ("MeshWifiInterfaceMac", logLogicFunctionInfo);
+	//    LogComponentEnable ("MeshL2RoutingProtocol", logLogicFunctionInfo);
+	//    LogComponentEnable ("MeshPointDevice", logLogicFunctionInfo);
 }
 
 void INSTALL_ConstantMobility(NodeContainer &nc, Ptr<ListPositionAllocator> positionAlloc)
@@ -141,44 +408,6 @@ void INSTALL_ConstantMobility(NodeContainer &nc, Ptr<ListPositionAllocator> posi
 	mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 	mobility.Install (nc);
 }
-
-namespace containers
-{
-	NodeContainer mnns;
-	NodeContainer leader;
-	NodeContainer followers;
-	NodeContainer cn;
-	NodeContainer lmaMagNodes;
-	NodeContainer aps;
-
-	//ref nodes
-	NodeContainer lma;
-	NodeContainer mags;
-	NodeContainer lmaCnNodes;
-	std::vector<NodeContainer> magApPairNodes;
-	//MAC Address for MAGs
-	std::vector<Mac48Address> magMacAddrs;
-
-	NetDeviceContainer lmaMagDevs;
-	NetDeviceContainer lmaCnDevs;
-	std::vector<NetDeviceContainer> magApPairDevs;
-	std::vector<NetDeviceContainer> apDevs;
-	std::vector<NetDeviceContainer> magBrDevs;
-
-	NetDeviceContainer mnnsExtDevs;
-	NetDeviceContainer mnnsIntDevs;
-	NetDeviceContainer leaderDev;
-	NetDeviceContainer followerDevs;
-
-	Ipv6InterfaceContainer backboneIfs;
-	Ipv6InterfaceContainer outerIfs;
-
-	std::vector<Ipv6InterfaceContainer> magIfs;
-
-	Ipv6InterfaceContainer glIfs;
-	Ipv6InterfaceContainer grpIfs;
-}
-using namespace containers;
 
 void PRINIT_MNNs_DeviceInfor(const std::string &preface)
 {
@@ -191,11 +420,25 @@ void PRINIT_MNNs_DeviceInfor(const std::string &preface)
 	NS_LOG_UNCOND("==================");
 }
 
+void EchoTx1(Ptr< const Packet > p)
+{
+    NS_LOG_UNCOND(p->GetUid() << " PACKET Echo Sent.");
+}
+
+void EchoRx1(Ptr< const Packet > p)
+{
+    NS_LOG_UNCOND(p->GetUid() << " PACKET Echo Received.");
+}
+
+void MacRx1(Ptr<Packet> packet, WifiMacHeader const *hdr)
+{
+	NS_LOG_UNCOND("MacRx1");
+}
+
+
 #define nof_street_mags  6
 #define nof_streets  2
 const int backBoneCnt = nof_street_mags * nof_streets;
-const double startTime = 0.0;
-const double endTime   = 150.0;
 Ipv6Address destAddress;
 Ptr<Node> destNode;
 
@@ -277,37 +520,17 @@ void INIT_MNN_Mobility()
 	MobilityHelper mobility;
 	mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 	mobility.Install(mnns);
-
-//	Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-//	positionAlloc->Add (Vector (-50.0, 50.0, 0.0)); //GL
-//	mobility.SetPositionAllocator (positionAlloc);
-//	mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
-//	mobility.Install(leader);
-//	positionAlloc = CreateObject<ListPositionAllocator> ();
-//
-//	for(unsigned int i = 0; i < followers.GetN(); i++)
-//	{
-//		  positionAlloc->Add (Vector (-20.0, (i*10) + 20.0, 0.0)); //MNNs
-//	}
-//	mobility.SetPositionAllocator (positionAlloc);
-//	mobility.PushReferenceMobilityModel(leader.Get (0));
-//	mobility.Install(followers);
-//
-//  //GL movement
-//  Ptr<ConstantVelocityMobilityModel> cvm = leader.Get(0)->GetObject<ConstantVelocityMobilityModel>();
-//  cvm->SetVelocity(Vector (10.0, 0, 0)); //move to left to right 10.0m/s
 }
 
 void INIT_VelocitySensor(double interval)
 {
 	//Server Application
 	ApplicationContainer velocitySensor;
-
 	VelocitySensorHelper vs(Seconds (interval));
 	//do settings
 	velocitySensor = vs.Install(NodeContainer(leader, followers));
-	velocitySensor.Start (Seconds (startTime));
-	velocitySensor.Stop (Seconds (endTime));
+	velocitySensor.Start (Seconds (0.0));
+	velocitySensor.Stop (Seconds (script_cfg.m_totalTime));
 }
 
 void INIT_GrpFinder()
@@ -321,8 +544,8 @@ void INIT_GrpFinder()
 	gf.SetGroup(NetDeviceContainer(leaderDev, followerDevs));
 //	gf.SetGroup(mnnsExtDevs);
 	grpFinder = gf.Install(mnns);
-	grpFinder.Start (Seconds (startTime));
-	grpFinder.Stop (Seconds (endTime));
+	grpFinder.Start (Seconds (0.0));
+	grpFinder.Stop (Seconds (script_cfg.m_totalTime));
 }
 
 void INIT_UdpApp()
@@ -343,43 +566,59 @@ void INIT_UdpApp()
 	  udpClient.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
 	  clientApps = udpClient.Install (cn.Get (0));
 
-	  serverApps.Start (Seconds (startTime + 1.0));
-	  clientApps.Start (Seconds (startTime + 1.5));
-	  serverApps.Stop (Seconds (endTime));
-	  clientApps.Stop (Seconds (endTime));
+	  serverApps.Start (Seconds (1.0));
+	  clientApps.Start (Seconds (1.5));
+	  serverApps.Stop (Seconds (script_cfg.m_totalTime));
+	  clientApps.Stop (Seconds (script_cfg.m_totalTime));
 }
 
-void INIT_Anim(AnimationInterface &anim)
-{
-	anim.SetMobilityPollInterval(Seconds(1));
-	anim.UpdateNodeDescription(lmaMagNodes.Get(0), "LMA");
-	anim.UpdateNodeDescription(cn.Get(0), "CN");
-	anim.UpdateNodeDescription(leader.Get(0), "MNN");
-	for (int i = 0; i < backBoneCnt; i++)
-	{
-	  std::ostringstream out("");
-	  out << "AP" << i+1;
-	  anim.UpdateNodeDescription(aps.Get(i), out.str().c_str());
-	  out.str("");
-	  out << "MAG" << i+1;
-	  anim.UpdateNodeDescription(lmaMagNodes.Get(i+1), out.str().c_str());
-	  out.str("");
-	}
+//todo
+//void INIT_Anim()
+//{
+//	NS_LOG_UNCOND("Animator Settings");
+//	//  anim.SetMaxPktsPerTraceFile(300000);
+//	anim.SetMobilityPollInterval(Seconds(1));
+//	anim.UpdateNodeDescription(lmaMagNodes.Get(0), "LMA");
+//	anim.UpdateNodeDescription(cn.Get(0), "CN");
+//	anim.UpdateNodeDescription(leader.Get(0), "MNN");
+//	for (int i = 0; i < backBoneCnt; i++)
+//	{
+//		std::ostringstream out("");
+//		out << "AP" << i+1;
+//		anim.UpdateNodeDescription(aps.Get(i), out.str().c_str());
+//		out.str("");
+//		out << "MAG" << i+1;
+//		anim.UpdateNodeDescription(lmaMagNodes.Get(i+1), out.str().c_str());
+//		out.str("");
+//	}
+//
+//	for(unsigned int i = 0; i < followers.GetN(); i++)
+//	{
+//		std::ostringstream out("");
+//		out << "MN" << i+1;
+//		anim.UpdateNodeDescription(followers.Get(i), out.str().c_str());
+//		out.str("");
+//	}
+//}
 
-	for(unsigned int i = 0; i < followers.GetN(); i++)
-	{
-	  std::ostringstream out("");
-	  out << "MN" << i+1;
-	  anim.UpdateNodeDescription(followers.Get(i), out.str().c_str());
-	  out.str("");
-	}
+void INIT_MobilityTracing()
+{
+	  std::string cur_path =
+			  "/home/user/Downloads/ns/rts/"
+			  "ns-allinone-3.22.14-jul-2017/ns-allinone-3.22/ns-3.22/";
+	  std::string traceFile(cur_path + "mnn3_trace.tcl");
+	  std::string logFile(cur_path + "mnn_trace.log");
+	  Ns2MobilityHelper ns2 = Ns2MobilityHelper (traceFile);
+	  ns2.Install ();
+	  mobilityLogStream.open (logFile.c_str ());
+	  //todo
+//	  Config::Connect ("/NodeList/*/$ns3::MobilityModel/CourseChange",
+//	                   MakeBoundCallback (&CourseChange, &mobilityLogStream));
 }
 
 void INIT_Pmip()
 {
 	Ptr<Pmipv6ProfileHelper> profile = ENABLE_LMA_Profiling();
-//	ENABLE_LMA_Profiling();
-
 	//LMA Helper
 	NS_LOG_UNCOND("LMA Helper");
 	Pmipv6LmaHelper lmahelper;
@@ -397,9 +636,7 @@ void INIT_Pmip()
 	}
 }
 
-// Prints actual position and velocity when a course change event occurs
-static void
-CourseChange (std::ostream *os, std::string foo, Ptr<const MobilityModel> mobility)
+void CourseChange (std::ostream *os, Ptr<const MobilityModel> mobility)
 {
   Vector pos = mobility->GetPosition (); // Get position
   Vector vel = mobility->GetVelocity (); // Get velocity
@@ -410,17 +647,8 @@ CourseChange (std::ostream *os, std::string foo, Ptr<const MobilityModel> mobili
       << ", z=" << vel.z << std::endl;
 }
 
-int main (int argc, char *argv[])
+void PMIP_Setup ()
 {
-  (void) startTime; (void)endTime;
-
-  CommandLine cmd;
-  cmd.Parse (argc, argv);
-  LOG_Settings();
-  SeedManager::SetSeed (123456);
-
-  CREATE_Nodes();
-
   PRINIT_MNNs_DeviceInfor("After node creation");
   INSTALL_InternetStack();
   PRINIT_MNNs_DeviceInfor("After Installing Internet stack");
@@ -649,36 +877,31 @@ int main (int argc, char *argv[])
   NS_LOG_UNCOND("Installing UDP server on MN");
   INIT_UdpApp();
 
-  NS_LOG_UNCOND("Animator Settings");
-  AnimationInterface anim("PMIPv6_TRACE.xml");
-//  anim.SetMaxPktsPerTraceFile(300000);
-  INIT_Anim(anim);
-  std::string cur_path =
-		  "/home/user/Downloads/ns/rts/"
-		  "ns-allinone-3.22.14-jul-2017/ns-allinone-3.22/ns-3.22/";
-  std::string traceFile(cur_path + "mnn_trace.tcl");
-  std::string logFile(cur_path + "mnn_trace.log");
-  // Create Ns2MobilityHelper with the specified trace log file as parameter
-  Ns2MobilityHelper ns2 = Ns2MobilityHelper (traceFile);
-
-  ns2.Install (); // configure movements for each node, while reading trace file
-
-  // open log file for output
-  std::ofstream os;
-  os.open (logFile.c_str ());
-
-  // Configure callback for logging
-  Config::Connect ("/NodeList/*/$ns3::MobilityModel/CourseChange",
-                   MakeBoundCallback (&CourseChange, &os));
-
 
   PRINIT_MNNs_DeviceInfor("END");
+}
 
-  //Run
-  NS_LOG_UNCOND("Run");
-  Simulator::Stop (Seconds (endTime));
-  Simulator::Run ();
-  Simulator::Destroy ();
+void run(const VanemoConfig &cfg)
+{
+	NS_LOG_UNCOND("Do");
+	Simulator::Stop (Seconds (cfg.m_totalTime));
+	Simulator::Run ();
+	Simulator::Destroy ();
+}
 
-  return 0;
+int
+main (int argc, char *argv[])
+{
+	script_cfg = VanemoConfig(argc,argv);
+	LOG_Settings();
+	SeedManager::SetSeed (123456);
+    CREATE_Nodes();
+	PMIP_Setup();
+	MeshSetup meshSetup(mnns);
+	meshSetup.Setup ();
+	EchoApp echoApp;
+	echoApp.Setup(mnns, meshSetup.GetIpInterfaces());
+	INIT_MobilityTracing();
+//	INIT_Anim();
+	run(script_cfg);
 }
