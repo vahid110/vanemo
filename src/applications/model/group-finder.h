@@ -34,6 +34,7 @@ namespace ns3 {
 
 class Socket;
 class Packet;
+class WifiMacHeader;
 
 /**
  * Find Groups of nodes.
@@ -61,6 +62,7 @@ public:
   bool GetGrpLeader() const;
   void MobilityStateUpdated(const VelocitySensor::MobilityState,
 		  	  	  	  	    const VelocitySensor::MobilityState);
+  void GroupBCastReceived(Ptr<Packet> packet, WifiMacHeader const *hdr);
 
   virtual ~GroupFinder ();
 

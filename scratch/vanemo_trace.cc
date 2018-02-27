@@ -240,8 +240,12 @@ void Setup ()
 			{
 			  continue;
 			}
-		  mac->SetRecvCb(MakeCallback(&MacRx1));
+
+		  Ptr<GroupFinder> gfApp = GroupFinder::GetGroupFinderApplication(device->GetNode());
+		  if (gfApp)
+			  mac->SetRecvCb(MakeCallback(&GroupFinder::GroupBCastReceived, gfApp));
 		}
+
 	}
 	//IP Addressing
 	IpAddressing ();
@@ -385,20 +389,24 @@ void LOG_Settings()
 	//    LogComponentEnable ("Ipv4Interface", LOG_LEVEL_LOGIC);
 	//    LogComponentEnable ("Ipv6Interface", LOG_LEVEL_LOGIC);
 
-	    LogComponentEnable ("UdpEchoClientApplication", logInfo);
-	    LogComponentEnable ("UdpEchoServerApplication", logInfo);
+//	    LogComponentEnable ("UdpEchoClientApplication", logInfo);
+//	    LogComponentEnable ("UdpEchoServerApplication", logInfo);
 	//    LogComponentEnable ("Ipv4Interface", logLogicFunctionInfo);
 	//    LogComponentEnable ("Ipv6Interface", logLogicFunctionInfo);
 	//    LogComponentEnable ("Icmpv6L4Protocol", logLogicFunctionInfo);
 	//    LogComponentEnable ("Ipv6L3Protocol", logLogicFunctionInfo);
 	//    LogComponentEnable ("Ipv6StaticRouting", logLogicFunctionInfo);
 	//    LogComponentEnable ("NdiscCache", logLogicFunctionInfo);
-	    LogComponentEnable ("HwmpProtocol", logLogicFunctionInfo);
-	    LogComponentEnable ("HwmpRtable", logLogicFunctionInfo);
-	    LogComponentEnable ("HwmpProtocolMac", logLogicFunctionInfo);
+//	    LogComponentEnable ("HwmpProtocol", logLogicFunctionInfo);
+//	    LogComponentEnable ("HwmpRtable", logLogicFunctionInfo);
+//	    LogComponentEnable ("HwmpProtocolMac", logLogicFunctionInfo);
 	//    LogComponentEnable ("MeshWifiInterfaceMac", logLogicFunctionInfo);
 	//    LogComponentEnable ("MeshL2RoutingProtocol", logLogicFunctionInfo);
 	//    LogComponentEnable ("MeshPointDevice", logLogicFunctionInfo);
+//	    LogComponentEnable ("Pmipv6Wifi", logLogicFunctionInfo);
+		LogLevel loglogicNode = static_cast<LogLevel>(LOG_PREFIX_NODE | LOG_LEVEL_LOGIC);
+	//    LogComponentEnable ("TestMeshScript", loglogicNode);
+	    LogComponentEnable ("GroupFinder", loglogicNode);
 }
 
 void INSTALL_ConstantMobility(NodeContainer &nc, Ptr<ListPositionAllocator> positionAlloc)
@@ -432,7 +440,7 @@ void EchoRx1(Ptr< const Packet > p)
 
 void MacRx1(Ptr<Packet> packet, WifiMacHeader const *hdr)
 {
-	NS_LOG_UNCOND("MacRx1");
+//	NS_LOG_LOGIC(hdr->GetAddr2());
 }
 
 

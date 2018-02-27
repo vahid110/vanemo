@@ -10,6 +10,7 @@
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
 #include "ns3/trace-source-accessor.h"
+#include "ns3/wifi-mac-header.h"
 #include "group-finder.h"
 
 namespace ns3 {
@@ -121,12 +122,17 @@ GroupFinder::DoDispose (void)
   Application::DoDispose ();
 }
 
-void
-GroupFinder::MobilityStateUpdated(VelocitySensor::MobilityState from,
+void GroupFinder::MobilityStateUpdated(VelocitySensor::MobilityState from,
 								  VelocitySensor::MobilityState to)
 {
 	NS_LOG_UNCOND("MobilityStateUpdated");
 	m_cur_mobility = to;//to do: Add more logic here, if required
 }
+
+void GroupFinder::GroupBCastReceived(Ptr<Packet> packet, WifiMacHeader const *hdr)
+{
+	NS_LOG_LOGIC(hdr->GetAddr2());
+}
+
 
 } // Namespace ns3
