@@ -349,6 +349,11 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   NS_LOG_FUNCTION (this << from << to << (uint32_t) att );
 
   Ptr<Node> node = GroupFinder::GetNodeByPmipMac(from);
+  if (!node)
+  {
+	  NS_LOG_WARN("No node found for mac:" << from);
+	  return;
+  }
   NS_ASSERT_MSG(node, "No node found for mac:" << from);
   Ptr<GroupFinder> gfApp = GroupFinder::GetGroupFinderApplication(node);
 

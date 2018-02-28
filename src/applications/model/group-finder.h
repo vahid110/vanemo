@@ -71,17 +71,25 @@ protected:
   virtual void DoDispose (void);
 
 private:
+  // inherited from Application base class.
+  virtual void StartApplication (void);    // Called at time specified by Start
+  virtual void StopApplication (void);     // Called at time specified by Stop
   void Report();
+private:
   //Accompanying devices (excluding the node itself.
   NetDeviceContainer m_devices;
-  std::set<Mac48Address> m_curGrpMacs;//internal mesh address
+  std::set<Mac48Address> m_curMeshMacs;//internal mesh address
+  std::set<Mac48Address> m_curPmipMacs;//internal pmip address
   Ipv6Address m_bind_mag;
   bool m_is_grp_leader;
   VelocitySensor::MobilityState m_curMobilityState;
   uint32_t m_reportInterval;
+  EventId m_updateEvent;
 
   static bool m_enable;
+  static std::map<Mac48Address, Ptr<Node> > m_meshMacToNode;
   static std::map<Mac48Address, Ptr<Node> > m_pmipMacToNode;
+  static std::map<Ptr<Node> , Mac48Address> m_pmipNodeToMac;
 };
 
 } // namespace ns3

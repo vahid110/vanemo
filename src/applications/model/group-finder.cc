@@ -20,7 +20,9 @@ NS_LOG_COMPONENT_DEFINE ("GroupFinder");
 NS_OBJECT_ENSURE_REGISTERED (GroupFinder);
 
 bool GroupFinder::m_enable = true;
+std::map<Mac48Address, Ptr<Node> > GroupFinder::m_meshMacToNode;
 std::map<Mac48Address, Ptr<Node> > GroupFinder::m_pmipMacToNode;
+std::map<Ptr<Node>, Mac48Address > GroupFinder::m_pmipNodeToMac;
 
 TypeId
 GroupFinder::GetTypeId (void)
@@ -37,9 +39,7 @@ GroupFinder::GroupFinder ()
 	, m_is_grp_leader(false)
 	, m_curMobilityState(VelocitySensor::VS_UNKNOWN)
 	, m_reportInterval(1)
-{
-	Report();
-}
+{}
 
 void
 GroupFinder::SetEnable(bool value)
@@ -57,6 +57,7 @@ void
 GroupFinder::AddPmipMac(const Mac48Address &mac, Ptr<Node> node)
 {
     m_pmipMacToNode[mac] = node;
+    m_pmipNodeToMac[node] = mac;
 }
 
 Ptr<Node>
@@ -64,7 +65,12 @@ GroupFinder::GetNodeByPmipMac(const Mac48Address &mac)
 {
 	std::map<Mac48Address, Ptr<Node> >::iterator it = m_pmipMacToNode.find(mac);
 	if (it == m_pmipMacToNode.end())
+	{
+		NS_LOG_WARN("Could not find a node among " << m_pmipMacToNode.size() << " nodes.");
+		for(it = m_pmipMacToNode.begin(); it != m_pmipMacToNode.end(); it++)
+			NS_LOG_WARN("Node:::: " << it->second->GetId() << ":" << it->first);
 		return 0;
+	}
     return it->second;
 }
 
@@ -85,7 +91,7 @@ GroupFinder::GetGroupFinderApplication(Ptr<Node> node)
 const std::set<Mac48Address>&
 GroupFinder::GetGroup() const
 {
-    return  m_curGrpMacs;
+    return  m_curPmipMacs;
 }
 
 void GroupFinder::SetBindMag(const Ipv6Address& val)
@@ -127,7 +133,8 @@ void GroupFinder::MobilityStateUpdated(VelocitySensor::MobilityState from,
 	switch(to)
 	{
 	case VelocitySensor::VS_ONMOVE:
-		m_curGrpMacs.clear();
+		m_curMeshMacs.clear();//todo consider removing
+		m_curPmipMacs.clear();
 		break;
 	default:
 		break;
@@ -139,18 +146,36 @@ void GroupFinder::MobilityStateUpdated(VelocitySensor::MobilityState from,
 void GroupFinder::GroupBCastReceived(Ptr<Packet> packet, WifiMacHeader const *hdr)
 {
 	NS_LOG_FUNCTION_NOARGS();
-//	NS_LOG_LOGIC(hdr->GetAddr2());
-	m_curGrpMacs.insert(hdr->GetAddr2());
+	(void) packet;
+	m_curMeshMacs.insert(hdr->GetAddr2());//todo, consider discarding
+	std::map<Mac48Address, Ptr<Node> >::iterator itNode = m_meshMacToNode.find(hdr->GetAddr2());
+	if (itNode != m_meshMacToNode.end())
+	{
+		std::map<Ptr<Node>, Mac48Address >::iterator itMac = m_pmipNodeToMac.find(itNode->second);
+		if (itMac != m_pmipNodeToMac.end() )
+			m_curPmipMacs.insert(itMac->second);
+	}
 }
 
 void GroupFinder::Report()
 {
-
-    Simulator::Schedule(Time(Seconds(m_reportInterval)), &GroupFinder::Report, this);
+	m_updateEvent = Simulator::Schedule(Time(Seconds(m_reportInterval)), &GroupFinder::Report, this);
     std::stringstream out("");
-    for (std::set<Mac48Address>::iterator it(m_curGrpMacs.begin()); it != m_curGrpMacs.end(); it++)
+    for (std::set<Mac48Address>::iterator it(m_curMeshMacs.begin()); it != m_curMeshMacs.end(); it++)
     	out << "  " << *it << "\n";
     NS_LOG_LOGIC("Team Members for:" << (GetNode() ? GetNode()->GetId() : uint32_t(123456)) << " :\n" << out.str());
+    if (GetNode())
+        NS_LOG_LOGIC("POSITION FOR NODE(" << GetNode()->GetId() << ")" << GetNode()->GetObject<MobilityModel> ()->GetPosition ());
+}
+
+void GroupFinder::StartApplication (void)
+{
+	m_updateEvent = Simulator::Schedule(Time(Seconds(m_reportInterval)), &GroupFinder::Report, this);
+}
+
+void GroupFinder::StopApplication (void)
+{
+	m_updateEvent.Cancel();
 }
 
 
