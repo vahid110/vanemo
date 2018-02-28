@@ -91,14 +91,14 @@ Ipv6InterfaceContainer ASSIGN_WithoutAddress(Ptr<NetDevice> device);
 void LOG_Settings();
 void INSTALL_ConstantMobility(NodeContainer &nc, Ptr<ListPositionAllocator> positionAlloc);
 void PRINIT_MNNs_DeviceInfor(const std::string &preface);
-void INIT_MobilityTracing();
+void INIT_MobilityTracing(std::ofstream &log);
 void INIT_GrpFinder(NetDeviceContainer &devs);
 void INIT_UdpApp();
 
 void EchoTx1(Ptr< const Packet > p);
 void EchoRx1(Ptr< const Packet > p);
 void MacRx1(Ptr<Packet> packet, WifiMacHeader const *hdr);
-void CourseChange (std::ostream *os, Ptr<const MobilityModel> mobility);
+static void CourseChange (std::string path, Ptr<const MobilityModel> mobility);
 
 struct VanemoConfig
 {
@@ -177,9 +177,8 @@ struct EchoApp
         ApplicationContainer clientApps = echoClient.Install (nodes.Get (clientNode));
         clientApps.Start (Seconds (2.0));
         clientApps.Stop (Seconds (script_cfg.m_totalTime));
-        //todo
-//        Config::ConnectWithoutContext("/NodeList/*/ApplicationList/*/$ns3::UdpEchoClient/Tx", MakeCallback(&EchoTx1));
-//        Config::ConnectWithoutContext("/NodeList/*/ApplicationList/*/$ns3::UdpEchoServer/Rx", MakeBoundCallback(&EchoRx1));
+        Config::ConnectWithoutContext("/NodeList/*/ApplicationList/*/$ns3::UdpEchoClient/Tx", MakeCallback(&EchoTx1));
+        Config::ConnectWithoutContext("/NodeList/*/ApplicationList/*/$ns3::UdpEchoServer/Rx", MakeCallback(&EchoRx1));
     }
 };
 
@@ -617,7 +616,7 @@ void INIT_Anim(AnimationInterface &anim)
     }
 }
 
-void INIT_MobilityTracing()
+void INIT_MobilityTracing(std::ofstream &log)
 {
       std::string cur_path =
               "/home/user/Downloads/ns/rts/"
@@ -626,10 +625,9 @@ void INIT_MobilityTracing()
       std::string logFile(cur_path + "mnn_trace.log");
       Ns2MobilityHelper ns2 = Ns2MobilityHelper (traceFile);
       ns2.Install ();
-      mobilityLogStream.open (logFile.c_str ());
-      //todo
-//      Config::Connect ("/NodeList/*/$ns3::MobilityModel/CourseChange",
-//                       MakeBoundCallback (&CourseChange, &mobilityLogStream));
+      log.open (logFile.c_str ());
+      Config::Connect("/NodeList/*/$ns3::MobilityModel/CourseChange",
+                       MakeCallback (&CourseChange/*, &mobilityLogStream*/));
 }
 
 void INIT_Pmip()
@@ -652,13 +650,13 @@ void INIT_Pmip()
     }
 }
 
-void CourseChange (std::ostream *os, Ptr<const MobilityModel> mobility)
+void CourseChange (std::string path, Ptr<const MobilityModel> mobility)
 {
   Vector pos = mobility->GetPosition (); // Get position
   Vector vel = mobility->GetVelocity (); // Get velocity
 
   // Prints position and velocities
-  *os << Simulator::Now () << " POS: x=" << pos.x << ", y=" << pos.y
+  mobilityLogStream << Simulator::Now () /*<< " " << path*/ << " POS: x=" << pos.x << ", y=" << pos.y
       << ", z=" << pos.z << "; VEL: x= " << vel.x << ", y=" << vel.y
       << ", z=" << vel.z << std::endl;
 }
@@ -887,6 +885,8 @@ void run(const VanemoConfig &cfg)
     Simulator::Stop (Seconds (cfg.m_totalTime));
     Simulator::Run ();
     Simulator::Destroy ();
+    if (mobilityLogStream.is_open())
+    	mobilityLogStream.close();
 }
 
 int
@@ -901,7 +901,7 @@ main (int argc, char *argv[])
     meshSetup.Setup ();
     EchoApp echoApp;
     echoApp.Setup(mnns, meshSetup.GetIpInterfaces());
-    INIT_MobilityTracing();
+    INIT_MobilityTracing(mobilityLogStream);
     AnimationInterface anim("PMIPv6_TRACE.xml");
     INIT_Anim(anim);
     run(script_cfg);
