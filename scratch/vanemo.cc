@@ -300,7 +300,7 @@ void initVelocitySensor(double interval)
 	velocitySensor.Stop (Seconds (endTime));
 }
 
-void initGrpFinder()
+void initGrpFinder(NetDeviceContainer &devs)
 {
 	//Server Application
 	ApplicationContainer grpFinder;
@@ -308,9 +308,7 @@ void initGrpFinder()
 	GroupFinderHelper::SetEnable(true);
 	GroupFinderHelper gf;
 	//do settings
-	gf.SetGroup(NetDeviceContainer(leaderDev, followerDevs));
-//	gf.SetGroup(mnnsExtDevs);
-	grpFinder = gf.Install(mnns);
+	grpFinder = gf.Install(mnns, devs);
 	grpFinder.Start (Seconds (startTime));
 	grpFinder.Stop (Seconds (endTime));
 }
@@ -542,10 +540,10 @@ int main (int argc, char *argv[])
   Ipv6Address glInternalAddress = mnnsExtDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
   Ipv6Address mnn2ExternalAddress = mnnsExtDevs.Get(2)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
 
-//  destAddress = glAddress;
-//  destNode = leader.Get(0);
-  destAddress = mnn2ExternalAddress;
-  destNode = mnns.Get(2);
+  destAddress = glExternalAddress;
+  destNode = leader.Get(0);
+//  destAddress = mnn2ExternalAddress;
+//  destNode = mnns.Get(2);
 
   NS_LOG_UNCOND("GL Address:" << glExternalAddress);
   NS_LOG_UNCOND("Mnn2 Address:" << mnn2ExternalAddress);
@@ -606,7 +604,7 @@ int main (int argc, char *argv[])
   initVelocitySensor(1.0);
 
   NS_LOG_UNCOND("Installing GRP FINDER");
-  initGrpFinder();
+  initGrpFinder(mnnsExtDevs);
 
   //Application
   NS_LOG_UNCOND("Installing UDP server on MN");
