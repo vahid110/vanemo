@@ -84,6 +84,9 @@ namespace containers
     std::ofstream mobilityLogStream;
 }
 using namespace containers;
+std::string cur_path =
+        "/home/user/Downloads/ns/rts/"
+        "ns-allinone-3.22.14-jul-2017/ns-allinone-3.22/ns-3.22/";
 
 Ipv6InterfaceContainer ASSIGN_SingleIpv6Address(Ptr<NetDevice> device, Ipv6Address addr, Ipv6Prefix prefix);
 Ipv6InterfaceContainer ASSIGN_Ipv6Addresses(NetDeviceContainer devices, Ipv6Address network, Ipv6Prefix prefix);
@@ -91,7 +94,7 @@ Ipv6InterfaceContainer ASSIGN_WithoutAddress(Ptr<NetDevice> device);
 void LOG_Settings();
 void INSTALL_ConstantMobility(NodeContainer &nc, Ptr<ListPositionAllocator> positionAlloc);
 void PRINIT_MNNs_DeviceInfor(const std::string &preface);
-void INIT_MobilityTracing(std::ofstream &log);
+void INIT_MobilityTracing();
 void INIT_GrpFinder(NetDeviceContainer &devs);
 void INIT_UdpApp();
 
@@ -111,7 +114,9 @@ struct VanemoConfig
         m_chan (false),
         m_pcap (false),
         m_stack (""),
-        m_root ("")
+        m_root (""),
+        m_tracedMobility(false),
+        m_mobility_file("mnn_trace.log")
     {}
 
     VanemoConfig(int argc, char *argv[]) :
@@ -123,7 +128,9 @@ struct VanemoConfig
         m_chan (true),
         m_pcap (false),
         m_stack ("ns3::Dot11sStack"),
-        m_root ("ff:ff:ff:ff:ff:ff")
+        m_root ("ff:ff:ff:ff:ff:ff"),
+        m_tracedMobility(false),
+        m_mobility_file("mnn_trace.log")
     {
         CommandLine cmd;
         cmd.AddValue ("time",  "Simulation time (sec)", m_totalTime);
@@ -135,6 +142,8 @@ struct VanemoConfig
         cmd.AddValue ("pcap",   "Enable PCAP traces on interfaces", m_pcap);
         cmd.AddValue ("stack",  "Type of protocol stack. ns3::Dot11sStack by default", m_stack);
         cmd.AddValue ("root", "Mac address of root mesh point in HWMP", m_root);
+        cmd.AddValue ("use-trace", "use trace file for Mobile node positions", m_tracedMobility);
+        cmd.AddValue ("mobility-file", "The trace file for Mobile node positions", m_mobility_file);
         cmd.Parse (argc, argv);
     }
 
@@ -149,6 +158,8 @@ struct VanemoConfig
     bool      m_pcap;
     std::string m_stack;
     std::string m_root;
+    bool m_tracedMobility;
+    std::string m_mobility_file;
 };
 
 VanemoConfig script_cfg;
@@ -366,15 +377,15 @@ void LOG_Settings()
     //  LogLevel logAll = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_ALL);
     //  LogLevel logLogic = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_LOGIC);
     //  LogLevel logInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO);
-//        LogLevel logDbg = static_cast<LogLevel>(LOG_LEVEL_DEBUG);
+        LogLevel logDbg = static_cast<LogLevel>(LOG_LEVEL_DEBUG);
     //  LogComponentEnable ("Udp6Server", logInfo);
     //  LogComponentEnable ("Pmipv6Agent", logAll);
     //  LogComponentEnable ("Pmipv6MagNotifier", logAll);
     //  LogComponentEnable ("Pmipv6Wifi", logDbg);
-    //  LogComponentEnable ("Pmipv6MagNotifier", logDbg);
+      LogComponentEnable ("Pmipv6MagNotifier", logDbg);
     //  LogComponentEnable ("Pmipv6Mag", logDbg);
-        LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
-        LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
+//        LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
+//        LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 
         //  LogLevel logInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_INFO);
         LogLevel logLogicFunctionInfo = static_cast<LogLevel>(LOG_PREFIX_TIME | LOG_PREFIX_NODE | LOG_LEVEL_LOGIC | LOG_LEVEL_INFO | LOG_LEVEL_FUNCTION);
@@ -530,8 +541,32 @@ Ptr<Pmipv6ProfileHelper> ENABLE_LMA_Profiling()
 void INIT_MNN_Mobility()
 {
     MobilityHelper mobility;
-    mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-    mobility.Install(mnns);
+    if (script_cfg.m_tracedMobility)
+    {
+        mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+        mobility.Install(mnns);
+        INIT_MobilityTracing();
+    }
+    else
+    {
+        Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
+        positionAlloc->Add (Vector (0.0, 100.0, 0.0)); //GL
+        mobility.SetPositionAllocator (positionAlloc);
+        mobility.SetMobilityModel ("ns3::ConstantVelocityMobilityModel");
+        mobility.Install(leader);
+        //GL movement
+        Ptr<ConstantVelocityMobilityModel> cvm = leader.Get(0)->GetObject<ConstantVelocityMobilityModel>();
+        cvm->SetVelocity(Vector (10.0, 0, 0)); //move left to right 10.0m/s
+        positionAlloc = CreateObject<ListPositionAllocator> ();
+        for(unsigned int i = 0; i < followers.GetN(); i++)
+        {
+              positionAlloc->Add (Vector (0.0, (i*10) + 20.0, 0.0)); //MNNs
+        }
+
+        mobility.SetPositionAllocator (positionAlloc);
+        mobility.PushReferenceMobilityModel(leader.Get (0));
+        mobility.Install(followers);
+    }
 }
 
 void INIT_VelocitySensor(
@@ -616,18 +651,46 @@ void INIT_Anim(AnimationInterface &anim)
     }
 }
 
-void INIT_MobilityTracing(std::ofstream &log)
+void INIT_MobilityTracing()
 {
-      std::string cur_path =
-              "/home/user/Downloads/ns/rts/"
-              "ns-allinone-3.22.14-jul-2017/ns-allinone-3.22/ns-3.22/";
       std::string traceFile(cur_path + "mnn3_trace.tcl");
-      std::string logFile(cur_path + "mnn_trace.log");
       Ns2MobilityHelper ns2 = Ns2MobilityHelper (traceFile);
       ns2.Install ();
-      log.open (logFile.c_str ());
+
+      std::string logFile(cur_path + script_cfg.m_mobility_file);
+      mobilityLogStream.open (logFile.c_str ());
+
       Config::Connect("/NodeList/*/$ns3::MobilityModel/CourseChange",
-                       MakeCallback (&CourseChange/*, &mobilityLogStream*/));
+                       MakeCallback (&CourseChange));
+}
+
+void SETUP_MNN(
+        WifiHelper &wifi,
+        YansWifiPhyHelper &wifiPhy,
+        NqosWifiMacHelper &wifiMac,
+        Ssid &ssid)
+{
+      INIT_MNN_Mobility();
+
+      PRINIT_MNNs_DeviceInfor("Before MNNs Wifi Installation");
+      NS_LOG_UNCOND("Create EXTERNAL networks and assign MNN Addresses.");
+
+      //GL Wifi
+      wifiMac.SetType ("ns3::StaWifiMac",
+                       "Ssid", SsidValue (ssid),
+                       "ActiveProbing", BooleanValue (false));
+      mnnsNormalDevs = wifi.Install (wifiPhy, wifiMac, mnns);
+      Ipv6InterfaceContainer iifc =
+              ASSIGN_Ipv6Addresses(mnnsNormalDevs,
+                                   Ipv6Address("3ffe:6:6:1::"),
+                                   64);
+      iifc.SetForwarding (0, true);
+      iifc.SetDefaultRouteInAllNodes (0);
+      PRINIT_MNNs_DeviceInfor("After EXTERNAL MNNs StaWifi Installation");
+
+      leaderDev.Add(mnnsNormalDevs.Get(0));
+      for (size_t i = 1; i < mnnsNormalDevs.GetN(); i++)
+          followerDevs.Add(mnnsNormalDevs.Get(i));
 }
 
 void INIT_Pmip()
@@ -781,24 +844,9 @@ void PMIP_Setup ()
   }
   NS_LOG_UNCOND(magOut.str() << apOut.str());
 
-  INIT_MNN_Mobility();
 
-  PRINIT_MNNs_DeviceInfor("Before MNNs Wifi Installation");
-  NS_LOG_UNCOND("Create EXTERNAL networks and assign MNN Addresses.");
 
-  //GL Wifi
-  wifiMac.SetType ("ns3::StaWifiMac",
-                   "Ssid", SsidValue (ssid),
-                   "ActiveProbing", BooleanValue (false));
-  mnnsNormalDevs = wifi.Install (wifiPhy, wifiMac, mnns);
-  iifc = ASSIGN_Ipv6Addresses(mnnsNormalDevs, Ipv6Address("3ffe:6:6:1::"), 64);
-  iifc.SetForwarding (0, true);
-  iifc.SetDefaultRouteInAllNodes (0);
-  PRINIT_MNNs_DeviceInfor("After EXTERNAL MNNs StaWifi Installation");
-
-  leaderDev.Add(mnnsNormalDevs.Get(0));
-  for (size_t i = 1; i < mnnsNormalDevs.GetN(); i++)
-      followerDevs.Add(mnnsNormalDevs.Get(i));
+  SETUP_MNN(wifi, wifiPhy, wifiMac, ssid);
 
 
   //End addresses
@@ -886,7 +934,7 @@ void run(const VanemoConfig &cfg)
     Simulator::Run ();
     Simulator::Destroy ();
     if (mobilityLogStream.is_open())
-    	mobilityLogStream.close();
+        mobilityLogStream.close();
 }
 
 int
@@ -901,7 +949,6 @@ main (int argc, char *argv[])
     meshSetup.Setup ();
     EchoApp echoApp;
     echoApp.Setup(mnns, meshSetup.GetIpInterfaces());
-    INIT_MobilityTracing(mobilityLogStream);
     AnimationInterface anim("PMIPv6_TRACE.xml");
     INIT_Anim(anim);
     run(script_cfg);
