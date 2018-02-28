@@ -29,6 +29,7 @@
 #include "ns3/velocity-sensor.h"
 
 #include <map>
+#include <set>
 
 namespace ns3 {
 
@@ -50,12 +51,12 @@ public:
   GroupFinder ();
   static void SetEnable(bool);
   static bool IsEnabled();
-  static void AddMacNodeMap(const Mac48Address&, Ptr<Node> );
-  static Ptr<Node> GetNodebyMac(const Mac48Address&);
+  static void AddPmipMac(const Mac48Address&, Ptr<Node> );
+  static Ptr<Node> GetNodeByPmipMac(const Mac48Address&);
   static Ptr<GroupFinder> GetGroupFinderApplication(Ptr<Node>);
 
   void SetGroup(NetDeviceContainer);
-  NetDeviceContainer GetGroup() const;
+  const std::set<Mac48Address>& GetGroup() const;
   void SetBindMag(const Ipv6Address&);
   Ipv6Address GetBindMag() const;
   void SetGrpLeader(bool);
@@ -70,14 +71,17 @@ protected:
   virtual void DoDispose (void);
 
 private:
+  void Report();
   //Accompanying devices (excluding the node itself.
   NetDeviceContainer m_devices;
+  std::set<Mac48Address> m_curGrpMacs;//internal mesh address
   Ipv6Address m_bind_mag;
   bool m_is_grp_leader;
-  VelocitySensor::MobilityState m_cur_mobility;
+  VelocitySensor::MobilityState m_curMobilityState;
+  uint32_t m_reportInterval;
 
   static bool m_enable;
-  static std::map<Mac48Address, Ptr<Node> > m_mac_to_node;
+  static std::map<Mac48Address, Ptr<Node> > m_pmipMacToNode;
 };
 
 } // namespace ns3

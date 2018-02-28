@@ -20,7 +20,7 @@ NS_LOG_COMPONENT_DEFINE ("GroupFinder");
 NS_OBJECT_ENSURE_REGISTERED (GroupFinder);
 
 bool GroupFinder::m_enable = true;
-std::map<Mac48Address, Ptr<Node> > GroupFinder::m_mac_to_node;
+std::map<Mac48Address, Ptr<Node> > GroupFinder::m_pmipMacToNode;
 
 TypeId
 GroupFinder::GetTypeId (void)
@@ -35,8 +35,11 @@ GroupFinder::GroupFinder ()
 	: m_devices()
 	, m_bind_mag()
 	, m_is_grp_leader(false)
-	, m_cur_mobility(VelocitySensor::VS_UNKNOWN)
-{}
+	, m_curMobilityState(VelocitySensor::VS_UNKNOWN)
+	, m_reportInterval(1)
+{
+	Report();
+}
 
 void
 GroupFinder::SetEnable(bool value)
@@ -51,16 +54,16 @@ GroupFinder::IsEnabled()
 }
 
 void
-GroupFinder::AddMacNodeMap(const Mac48Address &mac, Ptr<Node> node)
+GroupFinder::AddPmipMac(const Mac48Address &mac, Ptr<Node> node)
 {
-    m_mac_to_node[mac] = node;
+    m_pmipMacToNode[mac] = node;
 }
 
 Ptr<Node>
-GroupFinder::GetNodebyMac(const Mac48Address &mac)
+GroupFinder::GetNodeByPmipMac(const Mac48Address &mac)
 {
-	std::map<Mac48Address, Ptr<Node> >::iterator it = m_mac_to_node.find(mac);
-	if (it == m_mac_to_node.end())
+	std::map<Mac48Address, Ptr<Node> >::iterator it = m_pmipMacToNode.find(mac);
+	if (it == m_pmipMacToNode.end())
 		return 0;
     return it->second;
 }
@@ -79,17 +82,10 @@ GroupFinder::GetGroupFinderApplication(Ptr<Node> node)
 	return app;
 }
 
-void
-GroupFinder::SetGroup(NetDeviceContainer c)
-{
-    NS_LOG_DEBUG(this << "GroupFinder::SetGroup: " << c.GetN());
-    m_devices = c;
-}
-
-NetDeviceContainer
+const std::set<Mac48Address>&
 GroupFinder::GetGroup() const
 {
-    return m_devices;
+    return  m_curGrpMacs;
 }
 
 void GroupFinder::SetBindMag(const Ipv6Address& val)
@@ -125,13 +121,36 @@ GroupFinder::DoDispose (void)
 void GroupFinder::MobilityStateUpdated(VelocitySensor::MobilityState from,
 								  VelocitySensor::MobilityState to)
 {
-	NS_LOG_UNCOND("MobilityStateUpdated");
-	m_cur_mobility = to;//to do: Add more logic here, if required
+	NS_LOG_LOGIC("MobilityStateUpdated: " <<
+			     VelocitySensor::MobilityStateStr(from) << " -> " <<
+				 VelocitySensor::MobilityStateStr(to));
+	switch(to)
+	{
+	case VelocitySensor::VS_ONMOVE:
+		m_curGrpMacs.clear();
+		break;
+	default:
+		break;
+	};
+
+	m_curMobilityState = to;//to do: Add more logic here, if required
 }
 
 void GroupFinder::GroupBCastReceived(Ptr<Packet> packet, WifiMacHeader const *hdr)
 {
-	NS_LOG_LOGIC(hdr->GetAddr2());
+	NS_LOG_FUNCTION_NOARGS();
+//	NS_LOG_LOGIC(hdr->GetAddr2());
+	m_curGrpMacs.insert(hdr->GetAddr2());
+}
+
+void GroupFinder::Report()
+{
+
+    Simulator::Schedule(Time(Seconds(m_reportInterval)), &GroupFinder::Report, this);
+    std::stringstream out("");
+    for (std::set<Mac48Address>::iterator it(m_curGrpMacs.begin()); it != m_curGrpMacs.end(); it++)
+    	out << "  " << *it << "\n";
+    NS_LOG_LOGIC("Team Members for:" << (GetNode() ? GetNode()->GetId() : uint32_t(123456)) << " :\n" << out.str());
 }
 
 

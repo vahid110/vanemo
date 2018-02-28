@@ -348,7 +348,7 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   NS_LOG_DEBUG(is_non_gl << " HandleNewNode: " << from << "," << to << "," << m_targetAddress );
   NS_LOG_FUNCTION (this << from << to << (uint32_t) att );
 
-  Ptr<Node> node = GroupFinder::GetNodebyMac(from);
+  Ptr<Node> node = GroupFinder::GetNodeByPmipMac(from);
   NS_ASSERT_MSG(node, "No node found for mac:" << from);
   Ptr<GroupFinder> gfApp = GroupFinder::GetGroupFinderApplication(node);
 
@@ -390,11 +390,10 @@ void Pmipv6MagNotifier::HandleNewNode(Mac48Address from, Mac48Address to, uint8_
   Ptr<Node> gl = node;
   NS_LOG_DEBUG("GL is: " << gl->GetId() );
 
-  const NetDeviceContainer &c = gfApp->GetGroup();
-  for(uint32_t i = 0; i < c.GetN(); i++)
+  const std::set<Mac48Address> &c = gfApp->GetGroup();
+  for(std::set<Mac48Address>::const_iterator i(c.begin()); i != c.end(); i++)
   {
-	  Mac48Address candidate =
-			  Mac48Address::ConvertFrom(c.Get(i)->GetAddress());
+	  const Mac48Address &candidate = *i;
 
 	  if (candidate == from)// skip myself
 		  continue;

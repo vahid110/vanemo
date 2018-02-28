@@ -5,8 +5,11 @@
 
 namespace ns3 {
 
-VelocitySensorHelper::VelocitySensorHelper (const Time &updateInterval)
+VelocitySensorHelper::VelocitySensorHelper (
+		const Time &updateInterval,
+		VelocitySensor::UpdateMode updateMethod)
 	: m_updateInterval(updateInterval)
+	, m_updateMode(updateMethod)
 {
 	m_factory.SetTypeId (VelocitySensor::GetTypeId ());
 }
@@ -44,6 +47,7 @@ Ptr<Application> VelocitySensorHelper::InstallPriv (Ptr<Node> node) const
 {
 	  Ptr<VelocitySensor> app = m_factory.Create<VelocitySensor> ();
 	  app->SetUpdateInterval(m_updateInterval);
+	  app->SetUpdateMode(m_updateMode);
 	  node->AddApplication (app);
 	  return app;
 }

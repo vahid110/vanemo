@@ -54,41 +54,38 @@ GroupFinderHelper::SetAttribute (
 }
 
 ApplicationContainer
-GroupFinderHelper::Install (Ptr<Node> node) const
+GroupFinderHelper::Install (Ptr<Node> node, Ptr<NetDevice> dev) const
 {
-  return ApplicationContainer (InstallPriv (node));
+  return ApplicationContainer (InstallPriv (node, dev));
 }
 
 ApplicationContainer
-GroupFinderHelper::Install (std::string nodeName) const
+GroupFinderHelper::Install (std::string nodeName, uint32_t devId) const
 {
   Ptr<Node> node = Names::Find<Node> (nodeName);
-  return ApplicationContainer (InstallPriv (node));
+  return ApplicationContainer (InstallPriv (node, node->GetDevice(devId)));
 }
 
 ApplicationContainer
-GroupFinderHelper::Install (NodeContainer c) const
+GroupFinderHelper::Install (NodeContainer c, NetDeviceContainer d) const
 {
+  NS_ASSERT_MSG(c.GetN() == d.GetN(),
+			  "GroupFinderHelper::Install, node-dev cnount mismatch:" <<
+			  c.GetN() << "/" << d.GetN());
   ApplicationContainer apps;
-  for (NodeContainer::Iterator i = c.Begin (); i != c.End (); ++i)
+  for (uint32_t i = 0; i < c.GetN() ; ++i)
     {
-      apps.Add (InstallPriv (*i));
+      apps.Add (InstallPriv (c.Get(i), d.Get(i)));
     }
 
   return apps;
 }
 
-void
-GroupFinderHelper::SetGroup(NetDeviceContainer c)
-{
-    m_devices = c;
-}
-
 Ptr<Application>
-GroupFinderHelper::InstallPriv (Ptr<Node> node) const
+GroupFinderHelper::InstallPriv (Ptr<Node> node, Ptr<NetDevice> dev) const
 {
   Ptr<GroupFinder> app = m_factory.Create<GroupFinder> ();
-  app->SetGroup(m_devices);
+  app->SetNode(node);
   node->AddApplication (app);
   if( m_prerequire_velocity_sensor)
   {
@@ -106,9 +103,8 @@ GroupFinderHelper::InstallPriv (Ptr<Node> node) const
 	  vs->RegisterVelocityCB(cb);
 
   }
-  GroupFinder::AddMacNodeMap(Mac48Address::ConvertFrom(
-                                          node->GetDevice(1)->GetAddress()),
-                                                          node);
+  Mac48Address pmipMac = Mac48Address::ConvertFrom(dev->GetAddress());
+  GroupFinder::AddPmipMac(pmipMac, node);
   return app;
 }
 

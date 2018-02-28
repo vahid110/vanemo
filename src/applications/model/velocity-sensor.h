@@ -45,7 +45,14 @@ public:
 		VS_ACCELARATING,
 		VS_ONMOVE,
 	};
-    typedef Callback<void,
+
+	enum UpdateMode
+	{
+		MSU_ALL = 0,
+		MSU_STATE_CHANGE,
+	};
+
+	typedef Callback<void,
 			   VelocitySensor::MobilityState,
 			   VelocitySensor::MobilityState> state_change_notifier_t;
   /**
@@ -60,6 +67,8 @@ public:
   Vector GetCurVelocity();
   MobilityState GetCurState();
   void SetUpdateInterval(const Time&);
+  void SetUpdateMode(UpdateMode);
+  UpdateMode GetUpdateMode();
   static const std::string MobilityStateStr(MobilityState state)
   {
 	  if (state == VS_DESCELERATING)
@@ -125,6 +134,7 @@ private:
   std::list<state_change_notifier_t> m_stateChangeNotifiers;
   EventId m_updateEvent;
   Time m_updateInterval;
+  UpdateMode m_updateMode;
 };
 
 } // namespace ns3

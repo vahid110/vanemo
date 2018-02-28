@@ -18,6 +18,9 @@ VelocitySensor::GetTypeId (void)
 }
 
 VelocitySensor::VelocitySensor()
+	: m_curState()
+	, m_updateInterval(1)
+	, m_updateMode(MSU_ALL)
 {}
 
 void
@@ -39,6 +42,16 @@ VelocitySensor::MobilityState VelocitySensor::GetCurState()
 void VelocitySensor::SetUpdateInterval(const Time &val)
 {
 	m_updateInterval = val;
+}
+
+void VelocitySensor::SetUpdateMode(UpdateMode mode)
+{
+	m_updateMode = mode;
+}
+
+VelocitySensor::UpdateMode VelocitySensor::GetUpdateMode()
+{
+	return m_updateMode;
 }
 
 Vector VelocitySensor::GetVelocity()
@@ -67,7 +80,7 @@ void VelocitySensor::UpdateState()
 	State s(GetVelocity());
 
 	s.m_mobilityState = vs;
-
+	//our little state machine:
 	if (vs == VS_UNKNOWN)
 	{
 		if (s.m_factor == 0)
@@ -110,15 +123,21 @@ void VelocitySensor::UpdateState()
 	MobilityState from = m_curState.m_mobilityState;
 	MobilityState to = s.m_mobilityState;
 
-	if (m_curState.m_mobilityState != s.m_mobilityState)
-		NS_LOG_UNCOND("Changing state from " << m_curState.StateStr() << " to " << s.StateStr() <<".");
+	if (from != to)
+	{
+		NS_LOG_INFO("Mobility State Changed: " << m_curState.StateStr() <<
+				    " --> " << s.StateStr());
+	}
 	else
-		NS_LOG_UNCOND("state Unchanged from " << m_curState.StateStr() << " to " << s.StateStr() <<".");
+	{
+		NS_LOG_DEBUG("Mobility State Maintained " << m_curState.StateStr());
+	}
 
-	m_curState = s;
+	m_curState = s;	//update
 
 	//notify
-	if (!m_stateChangeNotifiers.empty() && from != to)
+	bool canUpdate = (m_updateMode == MSU_STATE_CHANGE ? (from != to) : true);
+	if (!m_stateChangeNotifiers.empty() && canUpdate)
 	{
 		std::list<state_change_notifier_t>::iterator it(
 				m_stateChangeNotifiers.begin());

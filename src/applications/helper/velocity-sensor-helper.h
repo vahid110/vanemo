@@ -21,7 +21,10 @@ public:
    * \param ip The IPv6 address of the remote udp echo server
    * \param port The port number of the remote udp echo server
    */
-  VelocitySensorHelper (const Time &updateInterval);
+  VelocitySensorHelper (
+		  const Time &updateInterval,
+		  VelocitySensor::UpdateMode updateMethod =
+				VelocitySensor::MSU_ALL);
   void SetAttribute (std::string name,const AttributeValue &value);
   /**
    * Create a udp echo client application on the specified node.  The Node
@@ -67,6 +70,7 @@ private:
 //  void LinktoGroupFinder(Ptr<VelocitySensor> app, Ptr<Node> node);
   ObjectFactory m_factory; //!< Object factory.
   Time m_updateInterval;
+  VelocitySensor::UpdateMode m_updateMode;
 
 };
 

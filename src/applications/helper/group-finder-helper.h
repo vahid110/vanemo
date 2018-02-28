@@ -64,7 +64,7 @@ public:
    * \returns An ApplicationContainer that holds a Ptr<Application> to the 
    *          application created
    */
-  ApplicationContainer Install (Ptr<Node> node) const;
+  ApplicationContainer Install (Ptr<Node> node, Ptr<NetDevice> dev) const;
 
   /**
    * Create a udp echo client application on the specified node.  The Node
@@ -76,7 +76,7 @@ public:
    * \returns An ApplicationContainer that holds a Ptr<Application> to the 
    *          application created
    */
-  ApplicationContainer Install (std::string nodeName) const;
+  ApplicationContainer Install (std::string nodeName, uint32_t devId) const;
 
   /**
    * \param c the nodes
@@ -85,9 +85,7 @@ public:
    *
    * \returns the applications created, one application per input node.
    */
-  ApplicationContainer Install (NodeContainer c) const;
-
-  void SetGroup(NetDeviceContainer);
+  ApplicationContainer Install (NodeContainer c, NetDeviceContainer d) const;
 
 private:
   /**
@@ -97,10 +95,11 @@ private:
    * \param node The node on which an UdpEchoClient will be installed.
    * \returns Ptr to the application installed.
    */
-  Ptr<Application> InstallPriv (Ptr<Node> node) const;
+  Ptr<Application> InstallPriv (Ptr<Node> node, Ptr<NetDevice> dev) const;
   ObjectFactory m_factory; //!< Object factory.
   //Accompanying devices (excluding the node itself.
   NetDeviceContainer m_devices;
+  NetDeviceContainer m_mesh_devices;
   bool m_prerequire_velocity_sensor;
 };
 
