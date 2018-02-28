@@ -81,7 +81,6 @@ namespace containers
 
     Ipv6InterfaceContainer glIfs;
     Ipv6InterfaceContainer grpIfs;
-//    AnimationInterface anim("PMIPv6_TRACE.xml");//todo
     std::ofstream mobilityLogStream;
 }
 using namespace containers;
@@ -590,34 +589,33 @@ void INIT_UdpApp()
       clientApps.Stop (Seconds (script_cfg.m_totalTime));
 }
 
-//todo
-//void INIT_Anim()
-//{
-//    NS_LOG_UNCOND("Animator Settings");
-//    //  anim.SetMaxPktsPerTraceFile(300000);
-//    anim.SetMobilityPollInterval(Seconds(1));
-//    anim.UpdateNodeDescription(lmaMagNodes.Get(0), "LMA");
-//    anim.UpdateNodeDescription(cn.Get(0), "CN");
-//    anim.UpdateNodeDescription(leader.Get(0), "MNN");
-//    for (int i = 0; i < backBoneCnt; i++)
-//    {
-//        std::ostringstream out("");
-//        out << "AP" << i+1;
-//        anim.UpdateNodeDescription(aps.Get(i), out.str().c_str());
-//        out.str("");
-//        out << "MAG" << i+1;
-//        anim.UpdateNodeDescription(lmaMagNodes.Get(i+1), out.str().c_str());
-//        out.str("");
-//    }
-//
-//    for(unsigned int i = 0; i < followers.GetN(); i++)
-//    {
-//        std::ostringstream out("");
-//        out << "MN" << i+1;
-//        anim.UpdateNodeDescription(followers.Get(i), out.str().c_str());
-//        out.str("");
-//    }
-//}
+void INIT_Anim(AnimationInterface &anim)
+{
+    NS_LOG_UNCOND("Animator Settings");
+    //  anim.SetMaxPktsPerTraceFile(300000);
+    anim.SetMobilityPollInterval(Seconds(1));
+    anim.UpdateNodeDescription(lmaMagNodes.Get(0), "LMA");
+    anim.UpdateNodeDescription(cn.Get(0), "CN");
+    anim.UpdateNodeDescription(leader.Get(0), "MNN");
+    for (int i = 0; i < backBoneCnt; i++)
+    {
+        std::ostringstream out("");
+        out << "AP" << i+1;
+        anim.UpdateNodeDescription(aps.Get(i), out.str().c_str());
+        out.str("");
+        out << "MAG" << i+1;
+        anim.UpdateNodeDescription(lmaMagNodes.Get(i+1), out.str().c_str());
+        out.str("");
+    }
+
+    for(unsigned int i = 0; i < followers.GetN(); i++)
+    {
+        std::ostringstream out("");
+        out << "MN" << i+1;
+        anim.UpdateNodeDescription(followers.Get(i), out.str().c_str());
+        out.str("");
+    }
+}
 
 void INIT_MobilityTracing()
 {
@@ -904,6 +902,7 @@ main (int argc, char *argv[])
     EchoApp echoApp;
     echoApp.Setup(mnns, meshSetup.GetIpInterfaces());
     INIT_MobilityTracing();
-//    INIT_Anim();
+    AnimationInterface anim("PMIPv6_TRACE.xml");
+    INIT_Anim(anim);
     run(script_cfg);
 }
