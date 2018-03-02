@@ -32,6 +32,11 @@
 #include "ns3/ipv4-header.h"
 #include "ns3/boolean.h"
 #include "ns3/ipv4-routing-table-entry.h"
+#include "ns3/ipv6-encapsulation-header.h"
+#include "ns3/ipv6-header.h"
+#include "ns3/ipv6-l3-protocol.h"
+#include "ns3/ipv6-interface.h"
+#include "ns3/ipv6-route.h"
 
 #include "loopback-net-device.h"
 #include "arp-l3-protocol.h"
@@ -199,14 +204,13 @@ Ipv4L3Protocol::NotifyNewAggregate ()
   Object::NotifyNewAggregate ();
 }
 
-void 
-Ipv4L3Protocol::SetRoutingProtocol (Ptr<Ipv4RoutingProtocol> routingProtocol)
-{
-  NS_LOG_FUNCTION (this << routingProtocol);
-  m_routingProtocol = routingProtocol;
-  m_routingProtocol->SetIpv4 (this);
-}
-
+  void
+  Ipv4L3Protocol::SetRoutingProtocol (Ptr<Ipv4RoutingProtocol> routingProtocol)
+  {
+    NS_LOG_FUNCTION(this << routingProtocol);
+    m_routingProtocol = routingProtocol;
+    m_routingProtocol->SetIpv4 (this);
+  }
 
 Ptr<Ipv4RoutingProtocol> 
 Ipv4L3Protocol::GetRoutingProtocol (void) const
@@ -542,6 +546,59 @@ Ipv4L3Protocol::Receive ( Ptr<NetDevice> device, Ptr<const Packet> p, uint16_t p
       m_dropTrace (ipHeader, packet, DROP_NO_ROUTE, m_node->GetObject<Ipv4> (), interface);
     }
 }
+
+  void
+  Ipv4L3Protocol::Send6to4 (Ptr<Packet> packet, Ipv4Address ipv4Dest,
+			    uint8_t protocol, uint16_t size, uint8_t ttl)
+  {
+
+    Ipv4Header ipHeaderv4;
+
+    ipHeaderv4.SetDestination (ipv4Dest);
+    ipHeaderv4.SetProtocol (protocol);
+    ipHeaderv4.SetPayloadSize (size);
+    ipHeaderv4.SetTtl (ttl);
+    ipHeaderv4.SetTos (0);
+    Ptr<Ipv4Route> newRoute;
+    Socket::SocketErrno err;
+    Ptr<NetDevice> oif (0);
+    Ipv4Address ipv4Source;
+    Ptr<NetDevice> idev;
+
+    newRoute = m_routingProtocol->RouteOutput (packet, ipHeaderv4, oif, err);
+   if (newRoute)
+      {
+
+	ipv4Source = newRoute->GetSource ();
+	ipHeaderv4.SetSource (ipv4Source);
+	idev = newRoute->GetOutputDevice ();
+
+      }
+    else
+      {
+	NS_LOG_WARN("No route found for forwarding packet.  Drop.");
+      }
+
+    if (Node::ChecksumEnabled ())
+      {
+	ipHeaderv4.EnableChecksum ();
+      }
+    uint64_t src = ipv4Source.Get ();
+    uint64_t dst = ipv4Dest.Get ();
+    uint64_t srcDst = dst | (src << 32);
+    std::pair<uint64_t, uint8_t> key = std::make_pair (srcDst, protocol);
+
+    ipHeaderv4.SetMayFragment ();
+    ipHeaderv4.SetIdentification (m_identification[key]);
+    m_identification[key]++;
+
+    if (Node::ChecksumEnabled ())
+      {
+	ipHeaderv4.EnableChecksum ();
+      }
+    SendRealOut (newRoute, packet, ipHeaderv4);
+
+  }
 
 Ptr<Icmpv4L4Protocol> 
 Ipv4L3Protocol::GetIcmp (void) const
@@ -952,6 +1009,13 @@ Ipv4L3Protocol::LocalDeliver (Ptr<const Packet> packet, Ipv4Header const&ip, uin
 
   m_localDeliverTrace (ipHeader, p, iif);
 
+    if (ipHeader.GetProtocol () == 41)
+      {
+	Ptr<Ipv6L3Protocol> ipv6Prot = m_node->GetObject<Ipv6L3Protocol> ();
+
+	ipv6Prot->Send6To4 (p);
+	return;
+      }
   Ptr<IpL4Protocol> protocol = GetProtocol (ipHeader.GetProtocol ());
   if (protocol != 0)
     {
@@ -1201,6 +1265,24 @@ Ipv4L3Protocol::SetForwarding (uint32_t i, bool val)
   interface->SetForwarding (val);
 }
 
+  bool
+  Ipv4L3Protocol::Is6to4Router (uint32_t i) const
+  {
+    NS_LOG_FUNCTION(this << i);
+    Ptr<Ipv4Interface> interface = GetInterface (i);
+
+    NS_LOG_LOGIC("6to4 router interface: " << interface->Is6to4Router ());
+    return interface->Is6to4Router ();
+  }
+
+  void
+  Ipv4L3Protocol::Set6to4Router (uint32_t i, bool val)
+  {
+    NS_LOG_FUNCTION(this << i << val);
+    Ptr<Ipv4Interface> interface = GetInterface (i);
+    interface->Set6to4Router (val);
+  }
+
 Ptr<NetDevice>
 Ipv4L3Protocol::GetNetDevice (uint32_t i)
 {
@@ -1282,7 +1364,6 @@ Ipv4L3Protocol::DoFragmentation (Ptr<Packet> packet, uint32_t outIfaceMtu, std::
   // The IP payload size is:
   // floor( ( outIfaceMtu - ipv4Header.GetSerializedSize() ) /8 ) *8
   uint32_t fragmentSize = (outIfaceMtu - ipv4Header.GetSerializedSize () ) & ~uint32_t (0x7);
-
   NS_LOG_LOGIC ("Fragmenting - Target Size: " << fragmentSize );
 
   do

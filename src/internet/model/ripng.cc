@@ -482,7 +482,16 @@ void RipNg::SetIpv6 (Ptr<Ipv6> ipv6)
         }
     }
 }
-
+bool RipNg::Is6to4PseudoInterface(Ipv6Address address) const
+{
+	uint8_t buff[16];
+		address.GetBytes(buff);
+		uint8_t to4Addr[16] = {0x20,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+		if(memcmp(buff,to4Addr,sizeof(buff)) == 0){
+			return (true);
+		}else
+			return (false);
+	}
 void RipNg::PrintRoutingTable (Ptr<OutputStreamWrapper> stream) const
 {
   NS_LOG_FUNCTION (this << stream);
@@ -503,12 +512,16 @@ void RipNg::PrintRoutingTable (Ptr<OutputStreamWrapper> stream) const
 
           if (status == RipNgRoutingTableEntry::RIPNG_VALID)
             {
-              std::ostringstream dest, gw, mask, flags;
-
-              dest << route->GetDest () << "/" << int(route->GetDestNetworkPrefix ().GetPrefixLength ());
+              std::ostringstream dest, gw, mask, flags, interface;
+              if(Is6to4PseudoInterface(route->GetDest())){
+                        *os << std::setiosflags (std::ios::left) << std::setw (31) << dest.str ();
+                        interface << "6to4 Pseudo-interface";
+                        *os << std::setiosflags (std::ios::left) << std::setw (27) << interface.str ();}
+                        else { dest << route->GetDest () << "/" << int(route->GetDestNetworkPrefix ().GetPrefixLength ());
               *os << std::setiosflags (std::ios::left) << std::setw (31) << dest.str ();
               gw << route->GetGateway ();
-              *os << std::setiosflags (std::ios::left) << std::setw (27) << gw.str ();
+                        *os << std::setiosflags (std::ios::left) << std::setw (27) << gw.str ();}
+
               flags << "U";
               if (route->IsHost ())
                 {

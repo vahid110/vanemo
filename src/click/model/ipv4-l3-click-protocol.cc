@@ -111,6 +111,19 @@ Ipv4L3ClickProtocol::NotifyNewAggregate ()
 }
 
 void
+Ipv4L3ClickProtocol::Set6to4Router (uint32_t interface, bool val)
+{
+	(void)interface;
+	(void) val;
+}
+bool
+Ipv4L3ClickProtocol::Is6to4Router (uint32_t interface) const
+{
+	(void)interface;
+	return false;
+}
+
+void
 Ipv4L3ClickProtocol::SetRoutingProtocol (Ptr<Ipv4RoutingProtocol> routingProtocol)
 {
   NS_LOG_FUNCTION (this);

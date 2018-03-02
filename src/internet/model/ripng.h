@@ -198,6 +198,7 @@ public:
   virtual void NotifyRemoveRoute (Ipv6Address dst, Ipv6Prefix mask, Ipv6Address nextHop,
                                   uint32_t interface, Ipv6Address prefixToUse = Ipv6Address::GetZero ());
   virtual void SetIpv6 (Ptr<Ipv6> ipv6);
+  bool Is6to4PseudoInterface (Ipv6Address address) const;
   virtual void PrintRoutingTable (Ptr<OutputStreamWrapper> stream) const;
 
   /**

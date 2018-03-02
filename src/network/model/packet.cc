@@ -691,8 +691,6 @@ Packet::Serialize (uint8_t* buffer, uint32_t maxSize) const
       // put the total length of the buffer in the
       // buffer. this includes 4-bytes for total 
       // length itself
-      *p++ = bufSize + 4;
-      size += bufSize;
 
       // serialize the buffer
       uint32_t serialized = 
@@ -712,6 +710,7 @@ Packet::Serialize (uint8_t* buffer, uint32_t maxSize) const
     {
       return 0;
     }
+	*p++ = bufSize + 4;
 
   // Serialized successfully
   return 1;
@@ -797,6 +796,94 @@ Packet::Deserialize (const uint8_t* buffer, uint32_t size)
   // return zero if did not deserialize the 
   // number of expected bytes
   return (size == 0);
+}
+
+uint32_t Packet::DeserializePub(uint8_t* buffer, uint32_t size) {
+	NS_LOG_FUNCTION(this);
+
+	const uint32_t* p = reinterpret_cast<const uint32_t *>(buffer);
+
+	// read nix-vector
+	NS_ASSERT(!m_nixVector);
+	uint32_t nixSize = *p++;
+
+	// if size less than nixSize, the buffer
+	// will be overrun, assert
+	NS_ASSERT(size >= nixSize);
+
+	size -= nixSize;
+
+	if (nixSize > 4) {
+		Ptr<NixVector> nix = Create<NixVector>();
+		uint32_t nixDeserialized = nix->Deserialize(p, nixSize);
+		if (!nixDeserialized) {
+			// nix-vector not deserialized
+			// completely
+			return 0;
+		}
+		m_nixVector = nix;
+		// increment p by nixSize ensuring
+		// 4-byte boundary
+		p += ((((nixSize - 4) + 3) & (~3)) / 4);
+	}
+
+	// read tags
+	/// \todo Deserialize Tags
+	//uint32_t tagsDeserialized = m_tags.Deserialize (buffer.Begin ());
+	//buffer.RemoveAtStart (tagsDeserialized);
+
+	// read metadata
+	uint32_t metaSize = *p++;
+
+	// if size less than metaSize, the buffer
+	// will be overrun, assert
+	NS_ASSERT(size >= metaSize);
+
+	size -= metaSize;
+
+	uint32_t metadataDeserialized = m_metadata.Deserialize(
+			reinterpret_cast<const uint8_t *>(p), metaSize);
+	if (!metadataDeserialized) {
+		// meta-data not deserialized
+		// completely
+		return 0;
+	}
+	// increment p by metaSize ensuring
+	// 4-byte boundary
+	p += ((((metaSize - 4) + 3) & (~3)) / 4);
+
+	// read buffer contents
+	uint32_t bufSize = *p++;
+
+	// if size less than bufSize, the buffer
+	// will be overrun, asserts
+
+	uint32_t bufferDeserialized = m_buffer.Deserialize(
+			reinterpret_cast<const uint8_t *>(p), bufSize);
+	if (!bufferDeserialized) {
+		// buffer not deserialized
+		// completely
+		return 0;
+	}
+
+	// return zero if did not deserialize the
+	// number of expected bytes
+	return (size == 0);
+}
+
+uint32_t Packet::AddInnerPacket(uint8_t *buffer, uint32_t size) {
+	NS_LOG_FUNCTION(
+				this << size);
+	m_innerPacket = new uint8_t [size];
+	m_innerPakSize = size;
+	memcpy(m_innerPacket, buffer, size);
+	return 0;
+}
+
+uint32_t Packet::GetInnerPacket(uint8_t* buffer){
+	buffer = new uint8_t [m_innerPakSize];
+	memcpy(buffer, m_innerPacket, m_innerPakSize);
+	return m_innerPakSize;
 }
 
 void 

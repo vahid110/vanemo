@@ -25,9 +25,12 @@
 #include "ns3/boolean.h"
 
 #include "ipv6.h"
+#include "ns3/log.h"
 
 namespace ns3 
 {
+
+NS_LOG_COMPONENT_DEFINE ("Ipv6");
 
 NS_OBJECT_ENSURE_REGISTERED (Ipv6);
 
@@ -55,6 +58,21 @@ Ipv6::Ipv6 ()
 
 Ipv6::~Ipv6 ()
 {
+}
+
+void
+Ipv6::Set6to4Router (uint32_t interface, bool val)
+{
+	(void)interface;
+	(void) val;
+	 NS_LOG_WARN ("Ipv6::Set6to4Router");
+}
+bool
+Ipv6::Is6to4Router (uint32_t interface) const
+{
+	(void)interface;
+	NS_LOG_WARN ("Ipv6::Is6to4Router");
+	return false;
 }
 
 } /* namespace ns3 */

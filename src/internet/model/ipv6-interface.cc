@@ -49,6 +49,7 @@ TypeId Ipv6Interface::GetTypeId ()
 Ipv6Interface::Ipv6Interface ()
   : m_ifup (false),
     m_forwarding (true),
+    m_router6to4 (false),
     m_metric (1),
     m_node (0),
     m_device (0),
@@ -199,6 +200,18 @@ void Ipv6Interface::SetForwarding (bool forwarding)
 {
   NS_LOG_FUNCTION (this << forwarding);
   m_forwarding = forwarding;
+}
+
+void Ipv6Interface::Set6to4Router (bool router6to4)
+{
+  NS_LOG_FUNCTION (this << router6to4);
+  m_router6to4 = router6to4;
+}
+
+bool Ipv6Interface::Is6to4Router () const
+{
+  NS_LOG_FUNCTION_NOARGS ();
+  return m_router6to4;
 }
 
 bool Ipv6Interface::AddAddress (Ipv6InterfaceAddress iface)

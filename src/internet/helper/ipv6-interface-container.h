@@ -166,12 +166,27 @@ public:
   void Add (std::string ipv6Name, uint32_t interface);
 
   /**
+   * \brief Set the state of the stack (act as a router or not) for the specified index.
+   * \param i index
+   * \param router true : is a router, false : is an host
+   */
+  void SetRouter (uint32_t i, bool router) NS_DEPRECATED;
+
+  /**
    * \brief Set the state of the stack (act as a router or as an host) for the specified index.
    * This automatically sets all the node's interfaces to the same forwarding state.
    * \param i index
    * \param state true : is a router, false : is an host
    */
   void SetForwarding (uint32_t i, bool state);
+
+  /**
+     * \brief Set the state of the stack (act as a 6to4 router) for the specified index.
+     * This automatically sets all the node's interfaces to the same forwarding state.
+     * \param i index
+     * \param state true : is a 6to4 router, false normal router
+     */
+  void Set6to4Router (uint32_t i, bool Router6to4);
 
   /**
    * \brief Set the default route for all the devices (except the router itself).

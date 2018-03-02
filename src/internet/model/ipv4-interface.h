@@ -138,6 +138,18 @@ public:
   void SetForwarding (bool val);
 
   /**
+   * \brief If the interface control 6to4 tunneling.
+   * \return true if mechanism is enabled, false otherwise
+   */
+  bool Is6to4Router () const;
+
+  /**
+    * \brief Set 6to4 enabled or not.
+    * \param setting 6to4 mechanism
+    */
+  void Set6to4Router (bool router6to4);
+
+  /**
    * \param p packet to send
    * \param dest next hop address of packet.
    *
@@ -206,6 +218,7 @@ private:
 
   bool m_ifup; //!< The state of this interface
   bool m_forwarding;  //!< Forwarding state.
+  bool m_6to4router; //set 6to4 mechanism
   uint16_t m_metric;  //!< Interface metric
   Ipv4InterfaceAddressList m_ifaddrs; //!< Address list
   Ptr<Node> m_node; //!< The associated node

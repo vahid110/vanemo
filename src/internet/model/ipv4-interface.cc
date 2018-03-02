@@ -60,6 +60,7 @@ Ipv4Interface::GetTypeId (void)
 Ipv4Interface::Ipv4Interface () 
   : m_ifup (false),
     m_forwarding (true),
+    m_6to4router (false),
     m_metric (1),
     m_node (0), 
     m_device (0),
@@ -194,6 +195,18 @@ Ipv4Interface::SetForwarding (bool val)
 {
   NS_LOG_FUNCTION (this << val);
   m_forwarding = val;
+}
+
+void Ipv4Interface::Set6to4Router (bool router6to4)
+{
+  NS_LOG_FUNCTION (this << router6to4);
+  m_6to4router = router6to4;
+}
+
+bool Ipv4Interface::Is6to4Router () const
+{
+  NS_LOG_FUNCTION_NOARGS ();
+  return m_6to4router;
 }
 
 void

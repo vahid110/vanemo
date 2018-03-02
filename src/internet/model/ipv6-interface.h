@@ -130,6 +130,18 @@ public:
   void SetForwarding (bool forward);
 
   /**
+   * \brief If the interface control 6to4 tunneling.
+   * \return true if mechanism is enabled, false otherwise
+   */
+  bool Is6to4Router () const;
+
+  /**
+    * \brief Set 6to4 enabled or not.
+    * \param setting 6to4 mechanism
+    */
+  void Set6to4Router (bool router6to4);
+
+  /**
    * \brief Set the current hop limit.
    * \param curHopLimit the value to set
    */
@@ -297,6 +309,11 @@ private:
    * \brief Forwarding state.
    */
   bool m_forwarding;
+
+  /**
+     * \brief state of router interface mechanism.
+     */
+  bool m_router6to4;
 
   /**
    * \brief The metric.

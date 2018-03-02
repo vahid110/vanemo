@@ -75,7 +75,16 @@ void Ipv6StaticRouting::SetIpv6 (Ptr<Ipv6> ipv6)
         }
     }
 }
-
+bool Ipv6StaticRouting::Is6to4PseudoInterface(Ipv6Address address) const
+{
+	uint8_t buff[16];
+	address.GetBytes(buff);
+	uint8_t to4Addr[16] = {0x20,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+	if(memcmp(buff,to4Addr,sizeof(buff)) == 0){
+		return (true);
+	}else
+		return (false);
+}
 // Formatted like output of "route -n" command
 void
 Ipv6StaticRouting::PrintRoutingTable (Ptr<OutputStreamWrapper> stream) const
@@ -92,12 +101,19 @@ Ipv6StaticRouting::PrintRoutingTable (Ptr<OutputStreamWrapper> stream) const
       *os << "Destination                    Next Hop                   Flag Met Ref Use If" << std::endl;
       for (uint32_t j = 0; j < GetNRoutes (); j++)
         {
-          std::ostringstream dest, gw, mask, flags;
+          std::ostringstream dest, gw, mask, flags, interface;
           Ipv6RoutingTableEntry route = GetRoute (j);
+          Ipv6Address destination = route.GetDest();
           dest << route.GetDest () << "/" << int(route.GetDestNetworkPrefix ().GetPrefixLength ());
+          if(Is6to4PseudoInterface(destination)){
           *os << std::setiosflags (std::ios::left) << std::setw (31) << dest.str ();
+          interface << "6to4 Pseudo-interface";
+          *os << std::setiosflags (std::ios::left) << std::setw (27) << interface.str ();}
+          else {*os << std::setiosflags (std::ios::left) << std::setw (31) << dest.str ();
           gw << route.GetGateway ();
-          *os << std::setiosflags (std::ios::left) << std::setw (27) << gw.str ();
+                *os << std::setiosflags (std::ios::left) << std::setw (27) << gw.str ();}
+
+
           flags << "U";
           if (route.IsHost ())
             {

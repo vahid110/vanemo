@@ -37,45 +37,21 @@
 
 class Ipv4L3ProtocolTestCase;
 
-namespace ns3 {
+namespace ns3
+{
 
-class Packet;
-class NetDevice;
-class Ipv4Interface;
-class Ipv4Address;
-class Ipv4Header;
-class Ipv4RoutingTableEntry;
-class Ipv4Route;
-class Node;
-class Socket;
-class Ipv4RawSocketImpl;
-class IpL4Protocol;
-class Icmpv4L4Protocol;
-
-
-/**
- * \brief Implement the Ipv4 layer.
- * 
- * This is the actual implementation of IP.  It contains APIs to send and
- * receive packets at the IP layer, as well as APIs for IP routing.
- *
- * This class contains two distinct groups of trace sources.  The
- * trace sources 'Rx' and 'Tx' are called, respectively, immediately
- * after receiving from the NetDevice and immediately before sending
- * to a NetDevice for transmitting a packet.  These are low level
- * trace sources that include the Ipv4Header already serialized into
- * the packet.  In contrast, the Drop, SendOutgoing, UnicastForward,
- * and LocalDeliver trace sources are slightly higher-level and pass
- * around the Ipv4Header as an explicit parameter and not as part of
- * the packet.
- *
- * IP fragmentation and reassembly is handled at this level.
- * At the moment the fragmentation does not handle IP option headers,
- * and in particular the ones that shall not be fragmented.
- * Moreover, the actual implementation does not mimic exactly the Linux
- * kernel. Hence it is not possible, for instance, to test a fragmentation
- * attack.
- */
+  class Packet;
+  class NetDevice;
+  class Ipv4Interface;
+  class Ipv4Address;
+  class Ipv4Header;
+  class Ipv4RoutingTableEntry;
+  class Ipv4Route;
+  class Node;
+  class Socket;
+  class Ipv4RawSocketImpl;
+  class IpL4Protocol;
+  class Icmpv4L4Protocol;
 class Ipv4L3Protocol : public Ipv4
 {
 public:
@@ -191,7 +167,22 @@ public:
    */
   void SendWithHeader (Ptr<Packet> packet, Ipv4Header ipHeader, Ptr<Ipv4Route> route);
 
-  uint32_t AddInterface (Ptr<NetDevice> device);
+    /**
+     * \brief IPv6 stack L3 layer calls this method to send IPv6 packet to IPv4
+     * interface encapsulated in IPv4 packet
+     * \param packet IPv6 packet packet to send
+     * \param ipv4Dest Ipv4 destination address to send
+     * \param protocol protocol number of IPv4 packet
+     * \param size size of packet
+     * \param ttl time to live of IPv4 packet
+     *
+     */
+    void
+    Send6to4 (Ptr<Packet> packet, Ipv4Address ipv4Dest, uint8_t protocol,
+	      uint16_t size, uint8_t ttl);
+
+    uint32_t
+    AddInterface (Ptr<NetDevice> device);
   /**
    * \brief Get an interface.
    * \param i interface index
@@ -213,17 +204,41 @@ public:
   Ipv4Address SelectSourceAddress (Ptr<const NetDevice> device,
                                    Ipv4Address dst, Ipv4InterfaceAddress::InterfaceAddressScope_e scope);
 
+    void
+    SetMetric (uint32_t i, uint16_t metric);
+    uint16_t
+    GetMetric (uint32_t i) const;
+    uint16_t
+    GetMtu (uint32_t i) const;
+    bool
+    IsUp (uint32_t i) const;
+    void
+    SetUp (uint32_t i);
+    void
+    SetDown (uint32_t i);
+    bool
+    IsForwarding (uint32_t i) const;
+    void
+    SetForwarding (uint32_t i, bool val);
 
-  void SetMetric (uint32_t i, uint16_t metric);
-  uint16_t GetMetric (uint32_t i) const;
-  uint16_t GetMtu (uint32_t i) const;
-  bool IsUp (uint32_t i) const;
-  void SetUp (uint32_t i);
-  void SetDown (uint32_t i);
-  bool IsForwarding (uint32_t i) const;
-  void SetForwarding (uint32_t i, bool val);
+    /**
+     * \brief Is interface in 6to4 router ?
+     * \param i interface index
+     * \returns true if the interface is in 6to4 router
+     */
+    bool
+    Is6to4Router (uint32_t i) const;
 
-  Ptr<NetDevice> GetNetDevice (uint32_t i);
+    /**
+     * \brief Enable or disable 6to4 mechanism on interface
+     * \param i interface index
+     * \param val true = enable 6to4 mechanism, false = disable
+     */
+    void
+    Set6to4Router (uint32_t i, bool val);
+
+    Ptr<NetDevice>
+    GetNetDevice (uint32_t i);
 
   /**
    * \brief Check if an IPv4 address is unicast according to the node.

@@ -66,6 +66,17 @@ Ipv4InterfaceContainer::Add (std::string ipv4Name, uint32_t interface)
   m_interfaces.push_back (std::make_pair (ipv4, interface));
 }
 
+
+void Ipv4InterfaceContainer::Set6to4Router (uint32_t i, bool router6to4)
+{
+	 Ptr<Ipv4> ipv4 = m_interfaces[i].first;
+	 for( uint32_t count = 0; count <= m_interfaces[i].second; count = count + 1 )
+		   {
+			 ipv4->Set6to4Router (m_interfaces[i].second, router6to4);
+		   }
+
+}
+
 std::pair<Ptr<Ipv4>, uint32_t>
 Ipv4InterfaceContainer::Get (uint32_t i) const
 {

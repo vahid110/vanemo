@@ -168,6 +168,14 @@ public:
   void Add (std::string ipv4Name, uint32_t interface);
 
   /**
+     * \brief Set the state of the stack (act as a 6to4 router) for the specified index.
+     * This automatically sets all the node's interfaces to the same forwarding state.
+     * \param i index
+     * \param state true : is a 6to4 router, false normal router
+     */
+  void Set6to4Router (uint32_t i, bool Router6to4);
+
+  /**
    * Get the std::pair of an Ptr<Ipv4> and interface stored at the location 
    * specified by the index.
    *

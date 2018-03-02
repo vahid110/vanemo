@@ -66,5 +66,19 @@ Ipv4::~Ipv4 ()
 {
   NS_LOG_FUNCTION (this);
 }
+void
+Ipv4::Set6to4Router (uint32_t interface, bool val)
+{
+	(void)interface;
+	(void) val;
+	 NS_LOG_WARN ("Ipv4::Set6to4Router");
+}
+bool
+Ipv4::Is6to4Router (uint32_t interface) const
+{
+	(void)interface;
+	NS_LOG_WARN ("Ipv4::Is6to4Router");
+	return false;
+}
 
 } // namespace ns3

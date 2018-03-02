@@ -653,7 +653,11 @@ public:
    *
    * \returns the Nix vector
    */
-  Ptr<NixVector> GetNixVector (void) const; 
+  Ptr<NixVector> GetNixVector (void) const;
+
+  uint32_t DeserializePub (uint8_t *buffer, uint32_t size);
+  uint32_t AddInnerPacket (uint8_t *buffer, uint32_t size);
+  uint32_t GetInnerPacket(uint8_t* buffer);
 
   /**
    * TracedCallback signature for Ptr<Packet>
@@ -697,6 +701,8 @@ private:
   ByteTagList m_byteTagList;      //!< the ByteTag list
   PacketTagList m_packetTagList;  //!< the packet's Tag list
   PacketMetadata m_metadata;      //!< the packet's metadata
+  uint8_t* m_innerPacket;
+  uint32_t m_innerPakSize;
 
   /* Please see comments above about nix-vector */
   Ptr<NixVector> m_nixVector; //!< the packet's Nix vector

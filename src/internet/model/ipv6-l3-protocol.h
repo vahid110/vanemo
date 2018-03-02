@@ -98,6 +98,9 @@ public:
    */
   virtual ~Ipv6L3Protocol ();
 
+    void
+    Write32 (uint8_t *buffer, const uint32_t data);
+
   /**
    * \brief Set node associated with this stack.
    * \param node node to set
@@ -170,7 +173,17 @@ public:
    * \param protocol number of packet
    * \param route route to take
    */
-  void Send (Ptr<Packet> packet, Ipv6Address source, Ipv6Address destination, uint8_t protocol, Ptr<Ipv6Route> route);
+    void
+    Send (Ptr<Packet> packet, Ipv6Address source, Ipv6Address destination,
+	  uint8_t protocol, Ptr<Ipv6Route> route);
+
+    /**
+     * \brief L3 of IPv4 stack calls this method when want to send IPv6 packet from IPv4 tunnel
+     *  to IPv6 interface
+     *  \param packet IPv6 packet decapsulated from IPv4 packet
+     */
+    void
+    Send6To4 (Ptr<Packet> packet);
 
   /**
    * \brief Set routing protocol for this stack.
@@ -326,7 +339,24 @@ public:
    */
   void SetForwarding (uint32_t i, bool val);
 
-  Ipv6Address SourceAddressSelection (uint32_t interface, Ipv6Address dest);
+    /**
+     * \brief Is interface in 6to4 router ?
+     * \param i interface index
+     * \returns true if the interface is in 6to4 router
+     */
+    bool
+    Is6to4Router (uint32_t i) const;
+
+    /**
+     * \brief Enable or disable 6to4 mechanism on interface
+     * \param i interface index
+     * \param val true = enable 6to4 mechanism, false = disable
+     */
+    void
+    Set6to4Router (uint32_t i, bool val);
+
+    Ipv6Address
+    SourceAddressSelection (uint32_t interface, Ipv6Address dest);
 
   /**
    * \brief Get device by index.
@@ -362,7 +392,19 @@ public:
    * \param mask network mask
    * \param defaultRouter gateway
    */
-  void RemoveAutoconfiguredAddress (uint32_t interface, Ipv6Address network, Ipv6Prefix mask, Ipv6Address defaultRouter);
+    void
+    RemoveAutoconfiguredAddress (uint32_t interface, Ipv6Address network,
+				 Ipv6Prefix mask, Ipv6Address defaultRouter);
+
+    /**
+     * \brief Adds IPv6 rapid deployment ISP network information to node
+     *
+     * \param ipv4Prefix ISP global prefix
+     * \param ipv6RdAddress Ipv6 global interface address of ISP
+     */
+    void
+    Add6RdNetwork (uint16_t ipv4Prefix, Ipv6InterfaceAddress ipv6RdAddress,
+		     uint32_t bRAddress);
 
   /**
    * \brief Register the IPv6 Extensions.
@@ -525,14 +567,35 @@ private:
   void SendRealOut (Ptr<Ipv6Route> route, Ptr<Packet> packet, Ipv6Header const& ipHeader);
 
   /**
+     * \brief Process IPv6 packet, create IPv4 packet and call IPv4 stack to send it thru interface.
+     * \param packet IPv6 packet
+     * \param ipHeader IPv6 header to be encapsulated
+     * \param sourceAddress IPv4 source address of this device
+     * \param destAddress IPv4 destination address of IPv6 insland gateway
+     * \param idev Pointer to ingress network device
+     */
+    void
+    Process6In4 (Ptr<Packet> packet, Ipv6Header ipHeader, uint32_t destAddress);
+    /**
    * \brief Forward a packet.
    * \param idev Pointer to ingress network device
    * \param rtentry route 
    * \param p packet to forward
    * \param header IPv6 header to add to the packet
    */
-  void IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentry, Ptr<const Packet> p, const Ipv6Header& header);
-
+    void
+    IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentry,
+	       Ptr<const Packet> p, const Ipv6Header& header);
+    /**
+     * \brief Checks if packet needs to be send to tunnel and sends if needed
+     * \param rtentry routing table entry
+     * \param packet received packet
+     * \param ipHeader IPv6 packet header
+     * \return true if sended to tunnel
+     */
+    bool
+    SendToTunnel (Ptr<Ipv6Route> rtentry, Ptr<Packet> packet,
+		  Ipv6Header ipHeader);
   /**
    * \brief Forward a multicast packet.
    * \param idev Pointer to ingress network device
@@ -670,6 +733,22 @@ private:
    * \brief Allow ICMPv6 Redirect sending state
    */
   bool m_sendIcmpv6Redirect;
+
+    /**
+     * \brief ISP prefix for 6rd
+     */
+    uint8_t m_ipv4Prefix6Rd;
+
+    /**
+     * \brief ISP Border Relay Address for 6rd
+     */
+    uint32_t m_bRAddress6Rd;
+
+    /**
+     * \brief Interface  ISP IPv6 address for 6rd
+     */
+    Ipv6InterfaceAddress m_address6Rd;
+
 };
 
 } /* namespace ns3 */

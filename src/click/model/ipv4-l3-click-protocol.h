@@ -228,6 +228,8 @@ public:
   bool IsForwarding (uint32_t i) const;
   void SetForwarding (uint32_t i, bool val);
   void SetPromisc (uint32_t i);
+  virtual void Set6to4Router (uint32_t interface, bool val);
+  virtual bool Is6to4Router (uint32_t interface) const;
 protected:
   virtual void DoDispose (void);
   /**

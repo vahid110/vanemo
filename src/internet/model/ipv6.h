@@ -305,6 +305,21 @@ public:
   virtual void SetForwarding (uint32_t interface, bool val) = 0;
 
   /**
+      * \brief Set 6to4mechanism on specified IPv6 interface.
+      * \param interface Interface number of IPv6 interface
+      * \param val Value to set the true if turning on 6to4 mechanism on interface
+      *
+      * If set to true, 6to4 mechanism is enabled for input datagrams on this device
+      */
+  virtual void Set6to4Router (uint32_t interface, bool val);
+
+  /**
+    * \param interface Interface number of IPv6 interface
+    * \returns true if router has 6to4 mechanism
+    */
+  virtual bool Is6to4Router (uint32_t interface) const;
+
+  /**
    * \brief Choose the source address to use with destination address.
    * \param interface interface index
    * \param dest IPv6 destination address
