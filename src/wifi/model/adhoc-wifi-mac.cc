@@ -166,6 +166,9 @@ AdhocWifiMac::Receive (Ptr<Packet> packet, const WifiMacHeader *hdr)
   NS_ASSERT (!hdr->IsCtl ());
   Mac48Address from = hdr->GetAddr2 ();
   Mac48Address to = hdr->GetAddr1 ();
+  if(hdr->IsData () || hdr->IsAction())
+	  NS_LOG_UNCOND("AdhocWifiMac::Receive processing packet " << packet->GetUid() << " , " << hdr->IsData () << hdr->IsAction());
+
   if (hdr->IsData ())
     {
       if (hdr->IsQosData () && hdr->IsQosAmsdu ())

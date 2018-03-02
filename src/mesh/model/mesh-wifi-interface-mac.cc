@@ -485,6 +485,8 @@ MeshWifiInterfaceMac::Receive (Ptr<Packet> packet, WifiMacHeader const *hdr)
     {
       ForwardUp (packet, hdr->GetAddr4 (), hdr->GetAddr3 ());
     }
+  if(hdr->IsData () || hdr->IsAction())
+	  NS_LOG_UNCOND("MeshWifiInterfaceMac::Receive processing packet " << packet->GetUid() << " , " << hdr->IsData () << hdr->IsAction());
 
   // We don't bother invoking RegularWifiMac::Receive() here, because
   // we've explicitly handled all the frames we care about. This is in

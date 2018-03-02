@@ -475,6 +475,9 @@ void
 ApWifiMac::Receive (Ptr<Packet> packet, const WifiMacHeader *hdr)
 {
   NS_LOG_FUNCTION (this << packet << hdr);
+  if(hdr->IsData () || hdr->IsAction())
+	  NS_LOG_UNCOND("ApWifiMac::Receive processing packet " << packet->GetUid() << " , " << hdr->IsData () << hdr->IsAction());
+
 
   Mac48Address from = hdr->GetAddr2 ();
 

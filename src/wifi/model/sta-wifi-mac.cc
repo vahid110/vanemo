@@ -413,6 +413,9 @@ void
 StaWifiMac::Receive (Ptr<Packet> packet, const WifiMacHeader *hdr)
 {
   NS_LOG_FUNCTION (this << packet << hdr);
+  if(hdr->IsData () || hdr->IsAction())
+	  NS_LOG_UNCOND("StaWifiMac::Receive processing packet " << packet->GetUid() << " , " << hdr->IsData () << hdr->IsAction());
+
   NS_ASSERT (!hdr->IsCtl ());
   if (hdr->GetAddr3 () == GetAddress ())
     {
