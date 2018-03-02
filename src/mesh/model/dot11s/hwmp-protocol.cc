@@ -66,7 +66,7 @@ HwmpProtocol::GetTypeId ()
                     )
     .AddAttribute ( "Dot11MeshHWMPmaxPREQretries",
                     "Maximum number of retries before we suppose the destination to be unreachable",
-                    UintegerValue (3),
+                    UintegerValue (6),
                     MakeUintegerAccessor (
                       &HwmpProtocol::m_dot11MeshHWMPmaxPREQretries),
                     MakeUintegerChecker<uint8_t> (1)
@@ -178,7 +178,7 @@ HwmpProtocol::HwmpProtocol () :
   m_rtable (CreateObject<HwmpRtable> ()),
   m_randomStart (Seconds (0.1)),
   m_maxQueueSize (255),
-  m_dot11MeshHWMPmaxPREQretries (3),
+  m_dot11MeshHWMPmaxPREQretries (5),
   m_dot11MeshHWMPnetDiameterTraversalTime (MicroSeconds (1024*100)),
   m_dot11MeshHWMPpreqMinInterval (MicroSeconds (1024*100)),
   m_dot11MeshHWMPperrMinInterval (MicroSeconds (1024*100)),
