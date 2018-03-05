@@ -32,6 +32,7 @@ namespace ns3
 
   Transition6In4::Transition6In4 ()
   {
+		NS_LOG_FUNCTION_NOARGS();
   }
 
   void
@@ -40,6 +41,7 @@ namespace ns3
 			   std::string destinationNetwork,
 			   Ipv4Address sourceAddress, Ipv4Address destAddress)
   {
+		NS_LOG_FUNCTION_NOARGS();
 
     Ptr<Ipv6> source = tunnelSource->GetObject<Ipv6> ();
     NS_ASSERT_MSG(source, "Transition6In4::Set6In4: Bad ipv6");
@@ -89,6 +91,7 @@ namespace ns3
   bool
   Transition6In4::Is6In4Gateway (Ipv6Address gateway)
   {
+		NS_LOG_FUNCTION_NOARGS();
     uint8_t buff[16];
     gateway.GetBytes (buff);
 

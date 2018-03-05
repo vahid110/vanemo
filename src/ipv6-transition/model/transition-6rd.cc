@@ -29,6 +29,7 @@ namespace ns3
 
   Transition6Rd::Transition6Rd ()
   {
+		NS_LOG_FUNCTION_NOARGS();
     m_ispNetwork = Ipv6InterfaceAddress (Ipv6Address ("1234:56::"),
                      Ipv6Prefix (24));
     NS_LOG_LOGIC("Transition6Rd -> m_ispNetwork: " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
@@ -75,7 +76,7 @@ namespace ns3
   void
   Transition6Rd::SetBorderRelay (Ptr<Node> cE)
   {
-
+	NS_LOG_FUNCTION_NOARGS();
     Ptr<Ipv6L3Protocol> l3 = cE->GetObject<Ipv6L3Protocol> ();
     NS_LOG_LOGIC("SetBorderRelay -> Add6RdNetwork for(" << PeekPointer(l3) << "): " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
     l3->Add6RdNetwork (m_ipv4Prefix, m_ispNetwork, m_bRAddress);
@@ -123,6 +124,7 @@ namespace ns3
   Transition6Rd::Get6rdNetwork (Ipv4Address nodeAddress, Ipv6Address subnetId,
                 uint32_t subLength)
   {
+		NS_LOG_FUNCTION_NOARGS();
 
     uint8_t ispPrefix = m_ispNetwork.GetPrefix ().GetPrefixLength ();
     NS_ASSERT_MSG((subLength + (32 - m_ipv4Prefix) + ispPrefix) <= 64,
@@ -179,6 +181,7 @@ namespace ns3
   void
   Transition6Rd::SetCustomerEdge (Ipv4Address outgoingAddress, Ptr<Node> cE)
   {
+		NS_LOG_FUNCTION_NOARGS();
     Ptr<Ipv6L3Protocol> l3 = cE->GetObject<Ipv6L3Protocol> ();
     NS_LOG_LOGIC("SetCustomerEdge -> Add6RdNetwork for(" << PeekPointer(l3) << "): " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
     l3->Add6RdNetwork (m_ipv4Prefix, m_ispNetwork, m_bRAddress);
@@ -202,6 +205,7 @@ namespace ns3
   Transition6Rd::GetIpv4Dest (Ipv6Prefix ispPrefix, Ipv6Address destination,
                   uint8_t v4Subnet, Ipv4Address v4Address)
   {
+		NS_LOG_FUNCTION_NOARGS();
 
     uint32_t index = PrefixToIndex (ispPrefix);
     uint32_t a = index / 8;
@@ -236,6 +240,7 @@ namespace ns3
   uint8_t
   Transition6Rd::getBit (uint32_t shift)
   {
+		NS_LOG_FUNCTION_NOARGS();
     uint8_t ret = 0xff;
     for (uint32_t i = 0; i < (8 - shift); i++)
       ret <<= 1;
@@ -245,6 +250,7 @@ namespace ns3
   uint32_t
   Transition6Rd::PrefixToIndex (Ipv6Prefix prefix) const
   {
+		NS_LOG_FUNCTION_NOARGS();
 
     uint8_t prefixBits[16];
     prefix.GetBytes (prefixBits);

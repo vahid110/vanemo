@@ -36,16 +36,19 @@ namespace ns3
 
   Ipv6EncapsulationHeader::Ipv6EncapsulationHeader ()
   {
+		NS_LOG_FUNCTION_NOARGS();
     m_size = 0;
   }
   Ipv6EncapsulationHeader::~Ipv6EncapsulationHeader ()
   {
+		NS_LOG_FUNCTION_NOARGS();
 
   }
 
   TypeId
   Ipv6EncapsulationHeader::GetTypeId (void)
   {
+		NS_LOG_FUNCTION_NOARGS();
     static TypeId tid =
 	TypeId ("ns3::Ipv6EncapsulationHeader").SetParent<Header> ().AddConstructor<
 	    Ipv6EncapsulationHeader> ();
@@ -54,12 +57,14 @@ namespace ns3
   TypeId
   Ipv6EncapsulationHeader::GetInstanceTypeId (void) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     return GetTypeId ();
   }
 
   void
   Ipv6EncapsulationHeader::Print (std::ostream &os) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     os << "data=" << m_packet;
   }
   uint32_t

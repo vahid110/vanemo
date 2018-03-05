@@ -42,41 +42,48 @@ namespace ns3
 
   DualStackContainer::DualStackContainer ()
   {
+		NS_LOG_FUNCTION_NOARGS();
   }
 
   DualStackContainer::Iterator
   DualStackContainer::BeginV6 (void) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     return m_interfaces.begin ();
   }
 
   DualStackContainer::Iterator
   DualStackContainer::EndV6 (void) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     return m_interfaces.end ();
   }
 
   uint32_t
   DualStackContainer::GetNV6 () const
   {
+		NS_LOG_FUNCTION_NOARGS();
     return m_interfaces.size ();
   }
 
   uint32_t
   DualStackContainer::GetInterfaceIndexV6 (uint32_t i) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     return m_interfaces[i].second;
   }
 
   DualStackContainer::Iterator
   DualStackContainer::BeginV4 (void) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     return m_interfaces.begin ();
   }
 
   DualStackContainer::Iterator
   DualStackContainer::EndV4 (void) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     return m_interfaces.end ();
   }
 
@@ -89,12 +96,14 @@ namespace ns3
   uint32_t
   DualStackContainer::GetInterfaceIndexV4 (uint32_t i) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     return m_ipv4interfaces[i].second;
   }
 
   void
   DualStackContainer::Add (std::string ipv6Name, uint32_t interface)
   {
+		NS_LOG_FUNCTION_NOARGS();
     Ptr<Ipv6> ipv6 = Names::Find<Ipv6> (ipv6Name);
     m_interfaces.push_back (std::make_pair (ipv6, interface));
   }
@@ -102,6 +111,7 @@ namespace ns3
   void
   DualStackContainer::Add (DualStackContainer& c)
   {
+		NS_LOG_FUNCTION_NOARGS();
     for (InterfaceVectorV6::const_iterator it = c.m_interfaces.begin ();
 	it != c.m_interfaces.end (); it++)
       {
@@ -117,18 +127,21 @@ namespace ns3
   void
   DualStackContainer::Add (Ptr<Ipv6> ipv6, uint32_t interface)
   {
+		NS_LOG_FUNCTION_NOARGS();
     m_interfaces.push_back (std::make_pair (ipv6, interface));
   }
 
   void
   DualStackContainer::Add (Ptr<Ipv4> ipv4, uint32_t interface)
   {
+		NS_LOG_FUNCTION_NOARGS();
     m_ipv4interfaces.push_back (std::make_pair (ipv4, interface));
   }
 
   Ipv6Address
   DualStackContainer::GetIpv6Address (uint32_t i, uint32_t j) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     Ptr<Ipv6> ipv6 = m_interfaces[i].first;
     NS_ASSERT_MSG(ipv6,
 		  "DualStackContainer::GetIpv6Address(): IP stack not found.");
@@ -139,6 +152,7 @@ namespace ns3
   Ipv4Address
   DualStackContainer::GetIpv4Address (uint32_t i, uint32_t j) const
   {
+		NS_LOG_FUNCTION_NOARGS();
     Ptr<Ipv4> ipv4 = m_ipv4interfaces[i].first;
     uint32_t interface = m_ipv4interfaces[i].second;
     return ipv4->GetAddress (interface, j).GetLocal ();
@@ -147,6 +161,7 @@ namespace ns3
   void
   DualStackContainer::Set6to4Forwarding (uint32_t i, bool router)
   {
+		NS_LOG_FUNCTION_NOARGS();
     if (i < GetNV6 ())
       {
 	Ptr<Ipv6> ipv6 = m_interfaces[i].first;
@@ -173,6 +188,7 @@ namespace ns3
   void
   DualStackContainer::SetForwarding (uint32_t i, bool router)
   {
+		NS_LOG_FUNCTION_NOARGS();
     if (i < GetNV6 ())
       {
 	Ptr<Ipv6> ipv6 = m_interfaces[i].first;
@@ -189,6 +205,7 @@ namespace ns3
   void
   DualStackContainer::Set6to4Router (uint32_t i, bool Router6to4)
   {
+		NS_LOG_FUNCTION_NOARGS();
 
     if (i < GetNV6 ())
       {
@@ -242,6 +259,7 @@ namespace ns3
   void
   DualStackContainer::Set6to4Relay (uint32_t router)
   {
+		NS_LOG_FUNCTION_NOARGS();
 
     Ptr<Ipv6> ipv6 = m_interfaces[router].first;
     NS_ASSERT_MSG(
@@ -315,6 +333,7 @@ namespace ns3
   void
   DualStackContainer::SetDefaultRoute (uint32_t i, uint32_t router)
   {
+		NS_LOG_FUNCTION_NOARGS();
     NS_ASSERT_MSG(
 	i != router,
 	"A node shouldn't set itself as the default router, isn't it? Aborting.");
@@ -335,6 +354,7 @@ namespace ns3
   void
   DualStackContainer::SetDefaultRouteInAllNodes (uint32_t router)
   {
+		NS_LOG_FUNCTION_NOARGS();
     if (router < GetNV6 ())
       {
 	Ptr<Ipv6> ipv6 = m_interfaces[router].first;
@@ -365,6 +385,7 @@ namespace ns3
   void
   DualStackContainer::SetDefaultRoute (uint32_t i, Ipv6Address routerAddr)
   {
+		NS_LOG_FUNCTION_NOARGS();
     uint32_t routerIndex = 0;
     bool found = false;
     for (uint32_t index = 0; index < m_interfaces.size (); index++)
@@ -406,6 +427,7 @@ namespace ns3
   Ipv6Address
   DualStackContainer::GetLinkLocalAddress (uint32_t index)
   {
+		NS_LOG_FUNCTION_NOARGS();
     Ptr<Ipv6> ipv6 = m_interfaces[index].first;
     for (uint32_t i = 0; i < ipv6->GetNAddresses (m_interfaces[index].second);
 	i++)
@@ -423,6 +445,7 @@ namespace ns3
   void
   DualStackContainer::Print(IpType type)
   {
+		NS_LOG_FUNCTION_NOARGS();
 //	  if ((type == ipv4 || type == ipvboth) && !m_ipv4interfaces.empty())
 //	  {
 //		  NS_LOG_FUNCTION("IPV4:");
