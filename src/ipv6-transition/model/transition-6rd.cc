@@ -30,18 +30,20 @@ namespace ns3
   Transition6Rd::Transition6Rd ()
   {
     m_ispNetwork = Ipv6InterfaceAddress (Ipv6Address ("1234:56::"),
-					 Ipv6Prefix (24));
+                     Ipv6Prefix (24));
+    NS_LOG_LOGIC("Transition6Rd -> m_ispNetwork: " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
+
     m_ipv4Prefix = 8;
     for (uint32_t i = 0; i < IPV6_BITS; ++i)
       {
-	shift[i] = IPV6_BITS - i;
+    shift[i] = IPV6_BITS - i;
       }
     m_bRAddress = 0;
   }
 
   void
   Transition6Rd::SetIsp (std::string ispNetwork, Ipv6Prefix prefix,
-			 uint8_t ipv4Prefix, Ipv4Address bRAddress)
+             uint8_t ipv4Prefix, Ipv4Address bRAddress)
   {
     NS_LOG_FUNCTION(this << ispNetwork << prefix << ipv4Prefix << bRAddress);
     Ipv6Address netCheck = Ipv6Address (ispNetwork.c_str ());
@@ -57,12 +59,13 @@ namespace ns3
     NS_LOG_DEBUG("Index " << index);
     for (uint32_t j = 0; j < a; j++)
       {
-	nw[j] = subnet[j];
+    nw[j] = subnet[j];
       }
 
     nw[a] = subnet[a] & getBit (b);
 
     m_ispNetwork = Ipv6InterfaceAddress (Ipv6Address (nw), prefix);
+    NS_LOG_LOGIC("SetIsp -> m_ispNetwork: " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
     NS_ASSERT_MSG(ipv4Prefix >= 0, "Not prefix: lesser than 0");
     NS_ASSERT_MSG(ipv4Prefix <= 32, "Not prefix: bigger than 32");
     m_ipv4Prefix = ipv4Prefix;
@@ -74,6 +77,7 @@ namespace ns3
   {
 
     Ptr<Ipv6L3Protocol> l3 = cE->GetObject<Ipv6L3Protocol> ();
+    NS_LOG_LOGIC("SetBorderRelay -> Add6RdNetwork for(" << PeekPointer(l3) << "): " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
     l3->Add6RdNetwork (m_ipv4Prefix, m_ispNetwork, m_bRAddress);
     Ipv4Address bRAddress = Ipv4Address (m_bRAddress);
     Ptr<Ipv4> ipv4 = cE->GetObject<Ipv4> ();
@@ -83,20 +87,20 @@ namespace ns3
     interface->SetDevice (device);
     interface->SetNode (cE);
     Ipv4InterfaceAddress ifaceAddr = Ipv4InterfaceAddress (
-	bRAddress, Ipv4Mask ("255.255.255.0"));
+    bRAddress, Ipv4Mask ("255.255.255.0"));
     interface->AddAddress (ifaceAddr);
     NS_ASSERT_MSG(
-	ipv4,
-	"DualStackContainer::Set6to4Relay(): NetDevice is associated" " with a node without IPv4 stack installed -> fail " "(maybe need to use InternetStackHelper?)");
+    ipv4,
+    "DualStackContainer::Set6to4Relay(): NetDevice is associated" " with a node without IPv4 stack installed -> fail " "(maybe need to use InternetStackHelper?)");
 
     int32_t iif = ipv4->GetInterfaceForDevice (device);
     if (iif == -1)
       {
-	iif = ipv4->AddInterface (device);
+    iif = ipv4->AddInterface (device);
       }
     NS_ASSERT_MSG(
-	interface >= 0,
-	"DualStackContainer::Set6to4Relay(): " "Interface index not found");
+    interface >= 0,
+    "DualStackContainer::Set6to4Relay(): " "Interface index not found");
 
     interface->SetUp ();
     ipv4->AddAddress (iif, ifaceAddr);
@@ -108,7 +112,7 @@ namespace ns3
     Ptr<Ipv6> ipv6 = cE->GetObject<Ipv6> ();
     pseudoroute = routingHelper.GetStaticRouting (ipv6);
     pseudoroute->AddNetworkRouteTo (m_ispNetwork.GetAddress (),
-				    m_ispNetwork.GetPrefix (), 1, 1);
+                    m_ispNetwork.GetPrefix (), 1, 1);
 
     //get destination BR anycast without subnetID
 //    Ipv6Address hop = Get6rdNetwork (bRAddress, Ipv6Address ("::"), 0);
@@ -117,12 +121,12 @@ namespace ns3
   }
   Ipv6Address
   Transition6Rd::Get6rdNetwork (Ipv4Address nodeAddress, Ipv6Address subnetId,
-				uint32_t subLength)
+                uint32_t subLength)
   {
 
     uint8_t ispPrefix = m_ispNetwork.GetPrefix ().GetPrefixLength ();
     NS_ASSERT_MSG((subLength + (32 - m_ipv4Prefix) + ispPrefix) <= 64,
-		  "network will be tool long: subnet > 64");
+          "network will be tool long: subnet > 64");
 
     uint32_t index = PrefixToIndex (m_ispNetwork.GetPrefix ());
     uint32_t a = index / 8;
@@ -137,7 +141,7 @@ namespace ns3
     NS_LOG_DEBUG("Index " << index);
     for (uint32_t j = 0; j < a; ++j)
       {
-	nw[j] = subnet[j];
+    nw[j] = subnet[j];
       }
 
     nw[a] = subnet[a] & getBit (b);
@@ -149,9 +153,9 @@ namespace ns3
     uint32_t suf = m_ipv4Prefix / 8;
     for (uint32_t j = suf; j < 4; j++)
       {
-	ip4Byte = ((sufix >> ((3 - j) * 8)) & 0xff);
-	nw[a + j - suf + 1] |= ip4Byte << (8 - b);
-	nw[a - suf + j] |= ip4Byte >> b;
+    ip4Byte = ((sufix >> ((3 - j) * 8)) & 0xff);
+    nw[a + j - suf + 1] |= ip4Byte << (8 - b);
+    nw[a - suf + j] |= ip4Byte >> b;
       }
 
     uint32_t nextByte = 32 - m_ipv4Prefix + index;
@@ -165,8 +169,8 @@ namespace ns3
     for (uint32_t j = 0; j <= c; j++)
       {
 
-	nw[a + j + 1] |= id[j] << (8 - b);
-	nw[a + j] |= id[j] >> b;
+    nw[a + j + 1] |= id[j] << (8 - b);
+    nw[a + j] |= id[j] >> b;
       }
 
     return Ipv6Address (nw);
@@ -176,6 +180,7 @@ namespace ns3
   Transition6Rd::SetCustomerEdge (Ipv4Address outgoingAddress, Ptr<Node> cE)
   {
     Ptr<Ipv6L3Protocol> l3 = cE->GetObject<Ipv6L3Protocol> ();
+    NS_LOG_LOGIC("SetCustomerEdge -> Add6RdNetwork for(" << PeekPointer(l3) << "): " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
     l3->Add6RdNetwork (m_ipv4Prefix, m_ispNetwork, m_bRAddress);
 
     Ptr<Ipv4> ipv4 = cE->GetObject<Ipv4> ();
@@ -185,7 +190,7 @@ namespace ns3
     Ptr<Ipv6> ipv6 = cE->GetObject<Ipv6> ();
     pseudoroute = routingHelper.GetStaticRouting (ipv6);
     pseudoroute->AddNetworkRouteTo (m_ispNetwork.GetAddress (),
-				    m_ispNetwork.GetPrefix (), interface, 1);
+                    m_ispNetwork.GetPrefix (), interface, 1);
 
     //get destination BR anycast without subnetID
     Ipv4Address bRAddress = Ipv4Address (m_bRAddress);
@@ -195,7 +200,7 @@ namespace ns3
   }
   uint32_t
   Transition6Rd::GetIpv4Dest (Ipv6Prefix ispPrefix, Ipv6Address destination,
-			      uint8_t v4Subnet, Ipv4Address v4Address)
+                  uint8_t v4Subnet, Ipv4Address v4Address)
   {
 
     uint32_t index = PrefixToIndex (ispPrefix);
@@ -209,8 +214,8 @@ namespace ns3
     destination.GetBytes (buff);
     for (uint32_t i = c; i < 4; i++)
       {
-	v4Buff[i] |= buff[a - 1 + i - c] << (8 - b);
-	v4Buff[i] |= buff[a + i - c] >> b;
+    v4Buff[i] |= buff[a - 1 + i - c] << (8 - b);
+    v4Buff[i] |= buff[a + i - c] >> b;
 
       }
 
@@ -246,20 +251,22 @@ namespace ns3
 
     for (int32_t i = 15; i >= 0; --i)
       {
-	for (uint32_t j = 0; j < 8; ++j)
-	  {
-	    if (prefixBits[i] & 1)
-	      {
-		uint32_t index = IPV6_BITS - (15 - i) * 8 - j;
-		NS_ABORT_MSG_UNLESS(
-		    index > 0 && index < IPV6_BITS,
-		    "Transition6Rd::PrefixToIndex(): Illegal Prefix");
-		return index;
-	      }
-	    prefixBits[i] >>= 1;
-	  }
+    for (uint32_t j = 0; j < 8; ++j)
+      {
+        if (prefixBits[i] & 1)
+          {
+        uint32_t index = IPV6_BITS - (15 - i) * 8 - j;
+        NS_ABORT_MSG_UNLESS(
+            index > 0 && index < IPV6_BITS,
+            "Transition6Rd::PrefixToIndex(): Illegal Prefix");
+        return index;
+          }
+        prefixBits[i] >>= 1;
       }
-    NS_ASSERT_MSG(false, "Transitio6Rd::PrefixToIndex(): Impossible");
+      }
+    NS_ASSERT_MSG(false,
+                  "Transitio6Rd::PrefixToIndex(): " <<
+                      "Impossible situation for prefix :" << prefix);
     return 0;
   }
 

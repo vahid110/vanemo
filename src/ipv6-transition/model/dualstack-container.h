@@ -196,7 +196,17 @@ namespace ns3
      */
     Ipv6Address
     GetLinkLocalAddress (uint32_t index);
+    enum IpType
+    {
+        ipv4 = 4,
+        ipv6 = 6,
+        ipvboth = 10
+    };
 
+    /*
+     *
+     */
+    void Print(IpType type = ipvboth);
   private:
     /**
      * \internal

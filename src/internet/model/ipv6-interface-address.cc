@@ -38,12 +38,14 @@ Ipv6InterfaceAddress::Ipv6InterfaceAddress ()
     m_nsDadUid (0)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_UNCOND("Ipv6InterfaceAddress (0)  Setting m_prefix to " << m_prefix);
 }
 
 Ipv6InterfaceAddress::Ipv6InterfaceAddress (Ipv6Address address)
 {
   NS_LOG_FUNCTION (this << address);
   m_prefix = Ipv6Prefix (64);
+  NS_LOG_UNCOND("Ipv6InterfaceAddress (1)  Setting m_prefix to " << m_prefix);
   SetAddress (address);
   SetState (TENTATIVE_OPTIMISTIC);
   m_nsDadUid = 0;
@@ -53,6 +55,7 @@ Ipv6InterfaceAddress::Ipv6InterfaceAddress (Ipv6Address address, Ipv6Prefix pref
 {
   NS_LOG_FUNCTION (this << address << prefix);
   m_prefix = prefix;
+  NS_LOG_UNCOND("Ipv6InterfaceAddress (2)  Setting m_prefix to " << m_prefix);
   SetAddress (address);
   SetState (TENTATIVE_OPTIMISTIC);
   m_nsDadUid = 0;
@@ -65,6 +68,7 @@ Ipv6InterfaceAddress::Ipv6InterfaceAddress (const Ipv6InterfaceAddress& o)
     m_scope (o.m_scope),
     m_nsDadUid (o.m_nsDadUid)
 {
+	  NS_LOG_UNCOND("Ipv6InterfaceAddress (3)  Setting m_prefix to " << m_prefix);
 }
 
 Ipv6InterfaceAddress::~Ipv6InterfaceAddress ()
@@ -88,18 +92,21 @@ void Ipv6InterfaceAddress::SetAddress (Ipv6Address address)
       m_scope = HOST;
       /* localhost address is always /128 prefix */
       m_prefix = Ipv6Prefix (128);
+      NS_LOG_UNCOND("SetAddress(1) Setting m_prefix to " << m_prefix);
     }
   else if (address.IsLinkLocal ())
     {
       m_scope = LINKLOCAL;
       /* link-local address is always /64 prefix */
       m_prefix = Ipv6Prefix (64);
+      NS_LOG_UNCOND("SetAddress(2) Setting m_prefix to " << m_prefix);
     }
   else if (address.IsLinkLocalMulticast ())
     {
       m_scope = LINKLOCAL;
       /* link-local multicast address is always /16 prefix */
       m_prefix = Ipv6Prefix (16);
+      NS_LOG_UNCOND("SetAddress(3) Setting m_prefix to " << m_prefix);
     }
   else
     {

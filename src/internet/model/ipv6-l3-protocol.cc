@@ -1284,6 +1284,7 @@ void Ipv6L3Protocol::IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentr
   Ipv6L3Protocol::SendToTunnel (Ptr<Ipv6Route> rtentry, Ptr<Packet> packet,
 				Ipv6Header ipHeader)
   {
+	  NS_LOG_FUNCTION (this);
     Transition6In4 static6in4;
 
     if (static6in4.Is6In4Gateway (rtentry->GetGateway ()))
@@ -1298,6 +1299,7 @@ void Ipv6L3Protocol::IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentr
       }
 
     Transition6Rd trans6rd;
+    NS_LOG_UNCOND("Creating Transition6Rd with prefix ");
     Ptr<Ipv4> ipv4 = m_node->GetObject<Ipv4> ();
     Ptr<Ipv6> ipv6 = m_node->GetObject<Ipv6> ();
 

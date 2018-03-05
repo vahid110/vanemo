@@ -420,4 +420,25 @@ namespace ns3
     return Ipv6Address::GetAny ();
   }
 
+  void
+  DualStackContainer::Print(IpType type)
+  {
+//	  if ((type == ipv4 || type == ipvboth) && !m_ipv4interfaces.empty())
+//	  {
+//		  NS_LOG_FUNCTION("IPV4:");
+//
+//		  InterfaceVectorV4::iterator it(m_ipv4interfaces.begin());
+//		  while (it++ != m_ipv4interfaces.end())
+//			  NS_LOG_UNCOND("  " << it->second << " : " << it->first->GetAddress(1,1));
+//	  }
+//
+//	  if ((type == ipv6 || type == ipvboth) && !m_interfaces.empty())
+//	  {
+//		  NS_LOG_FUNCTION("IPV6:");
+//		  InterfaceVectorV6::iterator it(m_interfaces.begin());
+//		  while (it++ != m_interfaces.end())
+//			  NS_LOG_UNCOND("  " << it->second << " : " << it->first->GetAddress(1,1));
+//	  }
+  }
+
 }/* namespace ns3 */
