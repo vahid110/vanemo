@@ -126,6 +126,8 @@ TypeId Ipv6L3Protocol::GetTypeId ()
 
 Ipv6L3Protocol::Ipv6L3Protocol ()
   : m_nInterfaces (0)
+  , m_ipv4Prefix6Rd (0)
+  , m_bRAddress6Rd (0)
 {
   NS_LOG_FUNCTION_NOARGS ();
   m_pmtuCache = CreateObject<Ipv6PmtuCache> ();
