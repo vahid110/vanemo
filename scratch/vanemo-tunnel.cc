@@ -314,6 +314,10 @@ void initMnnMobility()
 	mobility.SetPositionAllocator (positionAlloc);
 	mobility.PushReferenceMobilityModel(leader.Get (0));
 	mobility.Install(followers);
+
+	//GL movement
+	Ptr<ConstantVelocityMobilityModel> cvm = leader.Get(0)->GetObject<ConstantVelocityMobilityModel>();
+	cvm->SetVelocity(Vector (10.0, 0, 0)); //move to left to right 10.0m/s
 }
 
 void initVelocitySensor(double interval)
@@ -549,19 +553,15 @@ int main (int argc, char *argv[])
 
   MagCsma2DevsAddressing();
 
-  initMnnMobility();
-
   printMnnsDeviceInfor("Before MNNs Wifi Installation");
   NS_LOG_UNCOND("Create EXTERNAL networks and assign MNN Addresses.");
-
-  //GL movement
-  Ptr<ConstantVelocityMobilityModel> cvm = leader.Get(0)->GetObject<ConstantVelocityMobilityModel>();
-  cvm->SetVelocity(Vector (10.0, 0, 0)); //move to left to right 10.0m/s
   //GL Wifi
   wifiMac.SetType ("ns3::StaWifiMac",
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
   mnnsExtDevs = wifi.Install (wifiPhy, wifiMac, mnns);
+
+  initMnnMobility();
   MnnsExtDevsAddressing();
   printMnnsDeviceInfor("After EXTERNAL MNNs StaWifi Installation");
 
