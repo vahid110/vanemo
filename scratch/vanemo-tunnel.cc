@@ -420,26 +420,24 @@ void initPmip()
 	  maghelper.Install (mags.Get(i), magIfs[i].GetAddress(0, 0), aps.Get(i));
 	}
 }
-void MagCsma2DevsAddressing()
-{
-	for (int i = 0; i < backBoneCnt; i++)
-	  {
-		  std::ostringstream out("");
-		  out << "3ffe:1:" << i+1 << "::1";
-		  magIfs.push_back(AssignSingleIpv6Address(magCsma2Devs.Get(i), Ipv6Address(out.str().c_str()), 64));
-		  magIfs[i].SetForwarding(0, true);
-		  magIfs[i].SetDefaultRouteInAllNodes(0);
-		  out.str("");
-	  }
-}
 
-void MnnsExtDevsAddressing()
+void MnnAndMagCsma2Addressing()
 {
 	Ipv6InterfaceContainer iifc;
 	iifc = AssignIpv6Addresses(mnnsExtDevs, Ipv6Address("3ffe:6:6:1::"), 64);
 	iifc.SetForwarding (0, true);
 	iifc.SetDefaultRouteInAllNodes (0);
+	for (int i = 0; i < backBoneCnt; i++)
+	{
+		std::ostringstream out("");
+		out << "3ffe:1:" << i+1 << "::1";
+		magIfs.push_back(AssignSingleIpv6Address(magCsma2Devs.Get(i), Ipv6Address(out.str().c_str()), 64));
+		magIfs[i].SetForwarding(0, true);
+		magIfs[i].SetDefaultRouteInAllNodes(0);
+		out.str("");
+	}
 }
+
 
 int main (int argc, char *argv[])
 {
@@ -551,7 +549,7 @@ int main (int argc, char *argv[])
 	  AssignWithoutAddress4(apCsmaDevs.Get(i));
   }
 
-  MagCsma2DevsAddressing();
+
 
   printMnnsDeviceInfor("Before MNNs Wifi Installation");
   NS_LOG_UNCOND("Create EXTERNAL networks and assign MNN Addresses.");
@@ -562,14 +560,15 @@ int main (int argc, char *argv[])
   mnnsExtDevs = wifi.Install (wifiPhy, wifiMac, mnns);
 
   initMnnMobility();
-  MnnsExtDevsAddressing();
   printMnnsDeviceInfor("After EXTERNAL MNNs StaWifi Installation");
 
   leaderDev.Add(mnnsExtDevs.Get(0));
   for (size_t i = 1; i < mnnsExtDevs.GetN(); i++)
 	  followerDevs.Add(mnnsExtDevs.Get(i));
-
   NS_LOG_UNCOND("Create INTERNAL networks and assign MNN Addresses.");
+
+
+  MnnAndMagCsma2Addressing();
 
   //End addresses
   Ipv6Address glExternalAddress = mnnsExtDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
