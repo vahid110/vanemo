@@ -117,7 +117,7 @@ private:
 MeshTest::MeshTest () :
   m_xSize (3),
   m_ySize (3),
-  m_step (100.0),
+  m_step (10.0),
   m_randomStart (0.1),
   m_totalTime (5),
   m_packetInterval (1),
