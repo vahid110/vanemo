@@ -199,6 +199,7 @@ enum IpL4Protocol::RxStatus Icmpv6L4Protocol::Receive (Ptr<Packet> packet, Ipv4H
 
 enum IpL4Protocol::RxStatus Icmpv6L4Protocol::Receive (Ptr<Packet> packet, Ipv6Header const &header, Ptr<Ipv6Interface> interface)
 {
+	  NS_LOG_INFO(this);
   NS_LOG_FUNCTION (this << packet << header.GetSourceAddress () << header.GetDestinationAddress () << interface);
   Ptr<Packet> p = packet->Copy ();
   Ptr<Ipv6> ipv6 = m_node->GetObject<Ipv6> ();
@@ -262,6 +263,7 @@ void Icmpv6L4Protocol::Forward (Ipv6Address source, Icmpv6Header icmp,
                                 uint32_t info, Ipv6Header ipHeader,
                                 const uint8_t payload[8])
 {
+	  NS_LOG_INFO(this);
   NS_LOG_FUNCTION (this << source << icmp << info << ipHeader << payload);
 
   Ptr<Ipv6L3Protocol> ipv6 = m_node->GetObject<Ipv6L3Protocol> ();
@@ -283,6 +285,7 @@ void Icmpv6L4Protocol::Forward (Ipv6Address source, Icmpv6Header icmp,
 
 void Icmpv6L4Protocol::HandleEchoRequest (Ptr<Packet> packet, Ipv6Address const &src, Ipv6Address const &dst, Ptr<Ipv6Interface> interface)
 {
+	  NS_LOG_INFO(this);
   NS_LOG_FUNCTION (this << packet << src << dst << interface);
   Icmpv6Echo request;
   uint8_t* buf = new uint8_t[packet->GetSize ()];

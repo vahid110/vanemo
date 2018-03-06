@@ -554,6 +554,8 @@ Ipv4L3Protocol::Receive ( Ptr<NetDevice> device, Ptr<const Packet> p, uint16_t p
 
     Ipv4Header ipHeaderv4;
 
+    NS_LOG_INFO ("Packet " << packet->GetUid() << " to " << ipv4Dest);
+
     ipHeaderv4.SetDestination (ipv4Dest);
     ipHeaderv4.SetProtocol (protocol);
     ipHeaderv4.SetPayloadSize (size);
@@ -1012,7 +1014,7 @@ Ipv4L3Protocol::LocalDeliver (Ptr<const Packet> packet, Ipv4Header const&ip, uin
     if (ipHeader.GetProtocol () == 41)
       {
 	Ptr<Ipv6L3Protocol> ipv6Prot = m_node->GetObject<Ipv6L3Protocol> ();
-
+	NS_LOG_INFO ("Ipv4L3Protocol::LocalDeliver");
 	ipv6Prot->Send6To4 (p);
 	return;
       }
@@ -1279,6 +1281,7 @@ Ipv4L3Protocol::SetForwarding (uint32_t i, bool val)
   Ipv4L3Protocol::Set6to4Router (uint32_t i, bool val)
   {
     NS_LOG_FUNCTION(this << i << val);
+    NS_LOG_INFO(this << i << val);
     Ptr<Ipv4Interface> interface = GetInterface (i);
     interface->Set6to4Router (val);
   }

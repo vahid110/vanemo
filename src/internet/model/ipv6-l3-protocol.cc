@@ -413,6 +413,7 @@ void Ipv6L3Protocol::RemoveAutoconfiguredAddress (uint32_t interface, Ipv6Addres
 				 Ipv6InterfaceAddress ipv6RdAddress,
 				 uint32_t bRAddress)
   {
+	  NS_LOG_FUNCTION (this /*<< ipv4Prefix << ipv6RdAddress << bRAddress*/);
     m_ipv4Prefix6Rd = ipv4Prefix;
     m_address6Rd = ipv6RdAddress;
     m_bRAddress6Rd = bRAddress;
@@ -632,6 +633,7 @@ void Ipv6L3Protocol::SetForwarding (uint32_t i, bool val)
   Ipv6L3Protocol::Set6to4Router (uint32_t i, bool val)
   {
     NS_LOG_FUNCTION(this << i << val);
+    NS_LOG_INFO(this << i << val);
     Ptr<Ipv6Interface> interface = GetInterface (i);
     interface->Set6to4Router (val);
   }
@@ -928,7 +930,7 @@ void Ipv6L3Protocol::SetDefaultTclass (uint8_t tclass)
 void Ipv6L3Protocol::Receive (Ptr<NetDevice> device, Ptr<const Packet> p, uint16_t protocol, const Address &from, const Address &to, NetDevice::PacketType packetType)
 {
   NS_LOG_FUNCTION (this << device << p << protocol << from << to << packetType);
-  NS_LOG_LOGIC ("Packet from " << from << " received on node " << m_node->GetId ());
+//  NS_LOG_INFO ("Packet from " << from << " received on node " << m_node->GetId ());
   uint32_t interface = 0;
   Ptr<Packet> packet = p->Copy ();
   Ptr<Ipv6Interface> ipv6Interface = 0;
@@ -1014,6 +1016,8 @@ void Ipv6L3Protocol::Receive (Ptr<NetDevice> device, Ptr<const Packet> p, uint16
   void
   Ipv6L3Protocol::Send6To4 (Ptr<Packet> packet)
   {
+	  NS_LOG_FUNCTION (this << packet);
+	  NS_LOG_INFO(this << packet->GetUid());
     Ipv6Header hdr;
 
     packet->RemoveHeader (hdr);
@@ -1034,7 +1038,7 @@ void Ipv6L3Protocol::Receive (Ptr<NetDevice> device, Ptr<const Packet> p, uint16
 	int32_t interface = GetInterfaceForDevice (dev);
 	packet->AddHeader (hdr);
 	Ptr<Ipv6Interface> outInterface = GetInterface (interface);
-	packet->Print (std::cout);
+//	packet->Print (std::cout);
 	outInterface->Send (packet, hdr.GetDestinationAddress ());
 
       }
@@ -1051,6 +1055,7 @@ void Ipv6L3Protocol::Receive (Ptr<NetDevice> device, Ptr<const Packet> p, uint16
 void Ipv6L3Protocol::SendRealOut (Ptr<Ipv6Route> route, Ptr<Packet> packet, Ipv6Header const& ipHeader)
 {
   NS_LOG_FUNCTION (this << route << packet << ipHeader);
+//  NS_LOG_INFO (this << route << packet << ipHeader);
 
   if (!route)
     {
@@ -1177,6 +1182,8 @@ void Ipv6L3Protocol::SendRealOut (Ptr<Ipv6Route> route, Ptr<Packet> packet, Ipv6
   Ipv6L3Protocol::Process6In4 (Ptr<Packet> packet, Ipv6Header ipHeader,
 			       uint32_t destAddress)
   {
+	  NS_LOG_INFO (this << "packt:" << packet->GetUid() << " dst:" << Ipv4Address (destAddress) << " --- " << ipHeader.GetDestinationAddress());
+
 
     Ptr<Packet> pak = Create<Packet> ();
     packet->AddHeader (ipHeader);
@@ -1193,7 +1200,7 @@ void Ipv6L3Protocol::SendRealOut (Ptr<Ipv6Route> route, Ptr<Packet> packet, Ipv6
     Ptr<Ipv4> ipv4 = m_node->GetObject<Ipv4> ();
     Ptr<Ipv4L3Protocol> v4L3Prot = ipv4->GetObject<Ipv4L3Protocol> ();
     v4L3Prot->Send6to4 (pak, ipv4Dest, 41, pak->GetSize (), ttl);
-    NS_LOG_LOGIC(
+    NS_LOG_INFO(
 	"Sending IPv6 encapsulated packet to: " << ipHeader.GetDestinationAddress());
     return;
   }
@@ -1202,7 +1209,7 @@ void Ipv6L3Protocol::SendRealOut (Ptr<Ipv6Route> route, Ptr<Packet> packet, Ipv6
 void Ipv6L3Protocol::IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentry, Ptr<const Packet> p, const Ipv6Header& header)
 {
   NS_LOG_FUNCTION (this << rtentry << p << header);
-  NS_LOG_LOGIC ("Forwarding logic for node: " << m_node->GetId ());
+  NS_LOG_INFO ("Forwarding logic for node: " << m_node->GetId ());
 
   // Drop RFC 3849 packets: 2001:db8::/32
   if (header.GetDestinationAddress().IsDocumentation())
@@ -1287,6 +1294,7 @@ void Ipv6L3Protocol::IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentr
 				Ipv6Header ipHeader)
   {
 	  NS_LOG_FUNCTION (this);
+	  NS_LOG_INFO (this);
     Transition6In4 static6in4;
 
     if (static6in4.Is6In4Gateway (rtentry->GetGateway ()))
@@ -1296,12 +1304,13 @@ void Ipv6L3Protocol::IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentr
 	rtentry->GetGateway ().GetBytes (buff);
 	uint32_t ipAddrv4Dest = buff[15] | (buff[14] << 8) | (buff[13] << 16)
 	    | (buff[12] << 24);
+	  NS_LOG_INFO (this << "-1");
 	Process6In4 (packet, ipHeader, ipAddrv4Dest);
 	return true;
       }
 
     Transition6Rd trans6rd;
-    NS_LOG_UNCOND("Creating Transition6Rd with prefix ");
+//    NS_LOG_UNCOND("Creating Transition6Rd with prefix ");
     Ptr<Ipv4> ipv4 = m_node->GetObject<Ipv4> ();
     Ptr<Ipv6> ipv6 = m_node->GetObject<Ipv6> ();
 
@@ -1311,6 +1320,7 @@ void Ipv6L3Protocol::IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentr
 	uint32_t ipaddrv4 = trans6rd.GetIpv4Dest (
 	    m_address6Rd.GetPrefix (), ipHeader.GetDestinationAddress (),
 	    m_ipv4Prefix6Rd, ipv4->GetAddress (1, 0).GetLocal ());
+	  NS_LOG_INFO (this << "-2");
 
 	Process6In4 (packet, ipHeader, ipaddrv4);
 	return true;
@@ -1323,6 +1333,7 @@ void Ipv6L3Protocol::IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentr
 
 	if (m_bRAddress6Rd == dest)
 	  {
+		  NS_LOG_INFO (this << "-3");
 	    Process6In4 (packet, ipHeader, dest);
 	    return true;
 	  }
@@ -1337,6 +1348,7 @@ void Ipv6L3Protocol::IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentr
 	    destination.Serialize (ipaddr);
 	    uint32_t ipaddrv4 = ipaddr[5] | (ipaddr[4] << 8) | (ipaddr[3] << 16)
 		| (ipaddr[2] << 24);
+		  NS_LOG_INFO (this << "-4");
 	    Process6In4 (packet, ipHeader, ipaddrv4);
 	    return true;
 	  }
@@ -1350,6 +1362,7 @@ void Ipv6L3Protocol::IpForward (Ptr<const NetDevice> idev, Ptr<Ipv6Route> rtentr
 	    destination.Serialize (ipaddr);
 	    uint32_t ipaddrv4 = ipaddr[5] | (ipaddr[4] << 8) | (ipaddr[3] << 16)
 		| (ipaddr[2] << 24);
+		  NS_LOG_INFO (this << "-5");
 
 	    Process6In4 (packet, ipHeader, ipaddrv4);
 	    return true;
