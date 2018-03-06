@@ -446,22 +446,31 @@ namespace ns3
   DualStackContainer::Print(IpType type)
   {
 		NS_LOG_FUNCTION_NOARGS();
-//	  if ((type == ipv4 || type == ipvboth) && !m_ipv4interfaces.empty())
-//	  {
-//		  NS_LOG_FUNCTION("IPV4:");
-//
-//		  InterfaceVectorV4::iterator it(m_ipv4interfaces.begin());
-//		  while (it++ != m_ipv4interfaces.end())
-//			  NS_LOG_UNCOND("  " << it->second << " : " << it->first->GetAddress(1,1));
-//	  }
-//
-//	  if ((type == ipv6 || type == ipvboth) && !m_interfaces.empty())
-//	  {
-//		  NS_LOG_FUNCTION("IPV6:");
-//		  InterfaceVectorV6::iterator it(m_interfaces.begin());
-//		  while (it++ != m_interfaces.end())
-//			  NS_LOG_UNCOND("  " << it->second << " : " << it->first->GetAddress(1,1));
-//	  }
+
+	  if ((type == ipv4 || type == ipvboth) && !m_ipv4interfaces.empty())
+	  {
+		  NS_LOG_UNCOND("IPV4: " << m_ipv4interfaces.size());
+
+		  InterfaceVectorV4::iterator it(m_ipv4interfaces.begin());
+		  while (it != m_ipv4interfaces.end())
+		  {
+			  for (size_t i = 0; i < it->first->GetNAddresses(it->second); i++)
+				  NS_LOG_UNCOND("  " << it->second << " : " << it->first->GetAddress(it->second, i));
+			  it++;
+		  }
+	  }
+
+	  if ((type == ipv6 || type == ipvboth) && !m_interfaces.empty())
+	  {
+		  NS_LOG_UNCOND("IPV6:" << m_interfaces.size());
+		  InterfaceVectorV6::iterator it(m_interfaces.begin());
+		  while (it != m_interfaces.end())
+		  {
+			  for (size_t i = 1; i < it->first->GetNAddresses(it->second); i++)
+				  NS_LOG_UNCOND("  " << it->second << " : " << it->first->GetAddress(it->second, i));
+			  it++;
+		  }
+	  }
   }
 
 }/* namespace ns3 */
