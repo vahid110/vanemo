@@ -427,10 +427,11 @@ void MnnAndMagCsma2Addressing()
 	iifc = AssignIpv6Addresses(mnnsExtDevs, Ipv6Address("3ffe:6:6:1::"), 64);
 	iifc.SetForwarding (0, true);
 	iifc.SetDefaultRouteInAllNodes (0);
+
 	for (int i = 0; i < backBoneCnt; i++)
 	{
 		std::ostringstream out("");
-		out << "3ffe:1:" << i+1 << "::1";
+		out << "3ffe:4:" << i+1 << "::1";
 		magIfs.push_back(AssignSingleIpv6Address(magCsma2Devs.Get(i), Ipv6Address(out.str().c_str()), 64));
 		magIfs[i].SetForwarding(0, true);
 		magIfs[i].SetDefaultRouteInAllNodes(0);
@@ -565,8 +566,6 @@ int main (int argc, char *argv[])
   leaderDev.Add(mnnsExtDevs.Get(0));
   for (size_t i = 1; i < mnnsExtDevs.GetN(); i++)
 	  followerDevs.Add(mnnsExtDevs.Get(i));
-  NS_LOG_UNCOND("Create INTERNAL networks and assign MNN Addresses.");
-
 
   MnnAndMagCsma2Addressing();
 
