@@ -416,6 +416,26 @@ void initPmip()
 	  maghelper.Install (mags.Get(i), magIfs[i].GetAddress(0, 0), aps.Get(i));
 	}
 }
+void MagCsma2DevsAddressing()
+{
+	for (int i = 0; i < backBoneCnt; i++)
+	  {
+		  std::ostringstream out("");
+		  out << "3ffe:1:" << i+1 << "::1";
+		  magIfs.push_back(AssignSingleIpv6Address(magCsma2Devs.Get(i), Ipv6Address(out.str().c_str()), 64));
+		  magIfs[i].SetForwarding(0, true);
+		  magIfs[i].SetDefaultRouteInAllNodes(0);
+		  out.str("");
+	  }
+}
+
+void MnnsExtDevsAddressing()
+{
+	Ipv6InterfaceContainer iifc;
+	iifc = AssignIpv6Addresses(mnnsExtDevs, Ipv6Address("3ffe:6:6:1::"), 64);
+	iifc.SetForwarding (0, true);
+	iifc.SetDefaultRouteInAllNodes (0);
+}
 
 int main (int argc, char *argv[])
 {
@@ -527,24 +547,7 @@ int main (int argc, char *argv[])
 	  AssignWithoutAddress4(apCsmaDevs.Get(i));
   }
 
-  for (int i = 0; i < backBoneCnt; i++)
-  {
-	  std::ostringstream out("");
-	  out << "3ffe:1:" << i+1 << "::1";
-	  magIfs.push_back(AssignSingleIpv6Address(magCsma2Devs.Get(i), Ipv6Address(out.str().c_str()), 64));
-	  magIfs[i].SetForwarding(0, true);
-	  magIfs[i].SetDefaultRouteInAllNodes(0);
-	  out.str("");
-  }
-
-
-//  std::ostringstream magOut(""), apOut("");
-//  for (int i = 0; i < backBoneCnt; i++)
-//  {
-//	  magOut << "MAG" << i << " Addresses: " << magIfs[i].GetAddress(0,0) << " and " << magIfs[i].GetAddress(0,1) << "\n";
-//	  apOut << "AP" << i << " Mac Addresses: " << magApPairDevs[i].Get(1)->GetAddress() << "\n";
-//  }
-//  NS_LOG_UNCOND(magOut.str() << apOut.str());
+  MagCsma2DevsAddressing();
 
   initMnnMobility();
 
@@ -559,9 +562,7 @@ int main (int argc, char *argv[])
 	               "Ssid", SsidValue (ssid),
 	               "ActiveProbing", BooleanValue (false));
   mnnsExtDevs = wifi.Install (wifiPhy, wifiMac, mnns);
-  iifc = AssignIpv6Addresses(mnnsExtDevs, Ipv6Address("3ffe:6:6:1::"), 64);
-  iifc.SetForwarding (0, true);
-  iifc.SetDefaultRouteInAllNodes (0);
+  MnnsExtDevsAddressing();
   printMnnsDeviceInfor("After EXTERNAL MNNs StaWifi Installation");
 
   leaderDev.Add(mnnsExtDevs.Get(0));
@@ -569,13 +570,6 @@ int main (int argc, char *argv[])
 	  followerDevs.Add(mnnsExtDevs.Get(i));
 
   NS_LOG_UNCOND("Create INTERNAL networks and assign MNN Addresses.");
-  //GL Wifi
-  wifiPhy.SetChannel (wifiChannel.Create ());
-  wifiMac.SetType ("ns3::AdhocWifiMac");
-  mnnsIntDevs = wifi.Install (wifiPhy, wifiMac, mnns);
-  iifc = AssignIpv6Addresses(mnnsIntDevs, Ipv6Address("3ffe:6:6:2::"), 64);
-  iifc.SetForwarding (0, true);
-  printMnnsDeviceInfor("After INTERNAL MNNs StaWifi Installation");
 
   //End addresses
   Ipv6Address glExternalAddress = mnnsExtDevs.Get(0)->GetNode ()->GetObject<Ipv6> ()->GetAddress(1, 1).GetAddress();
@@ -594,37 +588,6 @@ int main (int argc, char *argv[])
   initPmip();
   printMnnsDeviceInfor("After PMIP init");
 
-  NS_LOG_UNCOND("Routes");
-  //Routes From MAG
-  Ptr<Ipv6> ipv6gl = leader.Get(0)->GetObject<Ipv6> ();
-  Ipv6StaticRoutingHelper ipv6RoutingHelper;
-  Ptr<Ipv6StaticRouting> sr;
-  int32_t next;
-  next = ipv6gl->GetInterfaceForDevice(leader.Get(0)->GetDevice(1));
-  NS_LOG_UNCOND("next:" << next);
-  for (int i = 1; i <= backBoneCnt; i++)
-  {
-	  Ptr<Ipv6> ipv6mag =   lmaMagNodes.Get(i)->GetObject<Ipv6> ();
-	  sr = ipv6RoutingHelper.GetStaticRouting (ipv6mag);
-	  sr->AddHostRouteTo (destAddress, ipv6gl->GetAddress(next, 1).GetAddress(), 2);
-	  NS_LOG_UNCOND("MAG:" << i << ": AddHostRouteTo: " << destAddress << " --> " << ipv6gl->GetAddress(next, 1).GetAddress() << " 2");
-  }
-  //Routes From STA (GL)
-  sr = ipv6RoutingHelper.GetStaticRouting (ipv6gl);
-  Ptr<Ipv6> ip6Mnn1 = mnns.Get(1)->GetObject<Ipv6> ();
-  next = ip6Mnn1->GetInterfaceForDevice(mnns.Get(1)->GetDevice(2));
-  NS_LOG_UNCOND("next:" << next);
-  sr->AddHostRouteTo (destAddress, ip6Mnn1->GetAddress(next, 1).GetAddress(), 1);
-  NS_LOG_UNCOND("MNN0(GL): AddHostRouteTo: " << destAddress << " --> " << ip6Mnn1->GetAddress(next, 1).GetAddress() << " 1");
-  //Routes From relay node
-  sr = ipv6RoutingHelper.GetStaticRouting (ip6Mnn1);
-  Ptr<Ipv6> ip6Mnn2 = mnns.Get(2)->GetObject<Ipv6> ();
-  next = ip6Mnn2->GetInterfaceForDevice(mnns.Get(2)->GetDevice(2));
-  NS_LOG_UNCOND("next:" << next);
-  sr->AddHostRouteTo (destAddress, ip6Mnn2->GetAddress(next, 1).GetAddress(), 2);
-  NS_LOG_UNCOND("MNN1: AddHostRouteTo: " << destAddress << " --> " << ip6Mnn2->GetAddress(next, 1).GetAddress() << " 2");
-
-
   //Pcap
   csmaLmaMag.EnablePcap(std::string ("csma-lma-mag"), lmaMagCsmaDevs, false);
   csmaLmaMag.EnablePcap(std::string ("csma-lma-cn"), lmaCnDevs, false);
@@ -637,7 +600,6 @@ int main (int argc, char *argv[])
   }
 
   wifiPhy.EnablePcap ("wifi-ext-mnns", mnnsExtDevs);
-  wifiPhy.EnablePcap ("wifi-int-mnns", mnnsIntDevs);
 
   NS_LOG_UNCOND("Installing SENSOR");
 
