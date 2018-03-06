@@ -46,7 +46,7 @@ namespace ns3
   Transition6Rd::SetIsp (std::string ispNetwork, Ipv6Prefix prefix,
              uint8_t ipv4Prefix, Ipv4Address bRAddress)
   {
-    NS_LOG_FUNCTION(this << ispNetwork << prefix << ipv4Prefix << bRAddress);
+//    NS_LOG_FUNCTION(this << ispNetwork << prefix << ipv4Prefix << bRAddress);
     Ipv6Address netCheck = Ipv6Address (ispNetwork.c_str ());
 
     uint32_t index = PrefixToIndex (prefix);
@@ -66,7 +66,7 @@ namespace ns3
     nw[a] = subnet[a] & getBit (b);
 
     m_ispNetwork = Ipv6InterfaceAddress (Ipv6Address (nw), prefix);
-    NS_LOG_LOGIC("SetIsp -> m_ispNetwork: " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
+//    NS_LOG_LOGIC("SetIsp -> m_ispNetwork: " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
     NS_ASSERT_MSG(ipv4Prefix >= 0, "Not prefix: lesser than 0");
     NS_ASSERT_MSG(ipv4Prefix <= 32, "Not prefix: bigger than 32");
     m_ipv4Prefix = ipv4Prefix;
@@ -78,7 +78,7 @@ namespace ns3
   {
 	NS_LOG_FUNCTION_NOARGS();
     Ptr<Ipv6L3Protocol> l3 = cE->GetObject<Ipv6L3Protocol> ();
-    NS_LOG_LOGIC("SetBorderRelay -> Add6RdNetwork for(" << PeekPointer(l3) << "): " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
+//    NS_LOG_LOGIC("SetBorderRelay -> Add6RdNetwork for(" << PeekPointer(l3) << "): " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
     l3->Add6RdNetwork (m_ipv4Prefix, m_ispNetwork, m_bRAddress);
     Ipv4Address bRAddress = Ipv4Address (m_bRAddress);
     Ptr<Ipv4> ipv4 = cE->GetObject<Ipv4> ();
@@ -183,7 +183,7 @@ namespace ns3
   {
 		NS_LOG_FUNCTION_NOARGS();
     Ptr<Ipv6L3Protocol> l3 = cE->GetObject<Ipv6L3Protocol> ();
-    NS_LOG_LOGIC("SetCustomerEdge -> Add6RdNetwork for(" << PeekPointer(l3) << "): " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
+//    NS_LOG_LOGIC("SetCustomerEdge -> Add6RdNetwork for(" << PeekPointer(l3) << "): " << m_ispNetwork << " prefix" << m_ispNetwork.GetPrefix());
     l3->Add6RdNetwork (m_ipv4Prefix, m_ispNetwork, m_bRAddress);
 
     Ptr<Ipv4> ipv4 = cE->GetObject<Ipv4> ();

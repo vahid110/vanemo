@@ -81,6 +81,7 @@ namespace ns3
   Ipv6TransitionAddressGenerator::SetIpv6Base (std::string network,
 					       std::string init, bool mac)
   {
+	    NS_LOG_FUNCTION(this);
 
     Ipv6Address in = Ipv6Address (init.c_str ());
     in.GetBytes (m_v6init);
@@ -93,6 +94,7 @@ namespace ns3
   Ipv6TransitionAddressGenerator::SetIpv6Base (Ipv6Address network,
 					       Ipv6Address init)
   {
+	    NS_LOG_FUNCTION(this);
 
     init.GetBytes (m_v6init);
     m_mac = false;
@@ -104,6 +106,7 @@ namespace ns3
   Ipv6TransitionAddressGenerator::Set6To4Addr (std::string ip, std::string init,
 					       bool mac)
   {
+	    NS_LOG_FUNCTION(this);
 
     Ipv6Address network;
     Ipv6Prefix prefix;
@@ -145,6 +148,7 @@ namespace ns3
 // avoids some really hard to debug problems.
 //
     Ipv4AddressGenerator::AddAllocated (addr);
+    NS_LOG_UNCOND("NewAddressIpv4: " << addr);
     return addr;
   }
 
@@ -208,6 +212,7 @@ namespace ns3
   Ipv4Address
   Ipv6TransitionAddressGenerator::GetIpv4Addr ()
   {
+	    NS_LOG_FUNCTION(this);
     Ipv4Address addr = m_ipv4addr;
     return addr;
   }
@@ -252,7 +257,8 @@ namespace ns3
 
   DualStackContainer
   Ipv6TransitionAddressGenerator::Assign6to4Ipv4Only (
-      const NetDeviceContainer &c, uint32_t router6to4,
+      const NetDeviceContainer &c,
+	  uint32_t router6to4,
       const Ipv4Address addr6to4)
   {
     NS_LOG_FUNCTION_NOARGS ();
@@ -393,6 +399,7 @@ namespace ns3
   DualStackContainer
   Ipv6TransitionAddressGenerator::AssignDualStack (const NetDeviceContainer &c)
   {
+	    NS_LOG_FUNCTION(this);
 
     DualStackContainer retval;
 
@@ -456,7 +463,7 @@ namespace ns3
   DualStackContainer
   Ipv6TransitionAddressGenerator::AssignIpv6Only (const NetDeviceContainer &c)
   {
-//NS_LOG_FUNCTION (this);
+	  NS_LOG_FUNCTION (this);
     DualStackContainer retval;
 
     for (uint32_t i = 0; i < c.GetN (); ++i)
@@ -496,6 +503,7 @@ namespace ns3
   uint32_t
   Ipv6TransitionAddressGenerator::IpToInt (const std::string & ipAddress)
   {
+	NS_LOG_FUNCTION(this);
     const unsigned bitsPerTerm = 8;
     const unsigned numTerms = 4;
 
@@ -517,6 +525,7 @@ namespace ns3
   Ipv6TransitionAddressGenerator::ConvertIpIntegerToHex (
       unsigned long ipInteger)
   {
+	NS_LOG_FUNCTION(this);
     static char HexIp[18];
     char c;
     int i, index = 5;
@@ -541,7 +550,7 @@ namespace ns3
   void
   Ipv6TransitionAddressGenerator::incInit ()
   {
-
+    NS_LOG_FUNCTION(this);
     uint32_t byteprefix = 15;
     while (byteprefix != 8)
       {
