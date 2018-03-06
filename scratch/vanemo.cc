@@ -154,14 +154,14 @@ namespace containers
 	NodeContainer lma;
 	NodeContainer mags;
 	NodeContainer lmaCnNodes;
-	std::vector<NodeContainer> magApPairNodes;
+	std::vector<NodeContainer> magApNodes;
 	//MAC Address for MAGs
 	std::vector<Mac48Address> magMacAddrs;
 
-	NetDeviceContainer lmaMagDevs;
+	NetDeviceContainer lmaMagCsmaDevs;
 	NetDeviceContainer lmaCnDevs;
-	std::vector<NetDeviceContainer> magApPairDevs;
-	std::vector<NetDeviceContainer> apDevs;
+	std::vector<NetDeviceContainer> magApCsmaDevs;
+	std::vector<NetDeviceContainer> apWifiDevs;
 	std::vector<NetDeviceContainer> magBrDevs;
 
 	NetDeviceContainer mnnsExtDevs;
@@ -222,7 +222,7 @@ void createNodes()
 		  NodeContainer magApPair;
 		  magApPair.Add(mags.Get(i));
 		  magApPair.Add(aps.Get(i));
-		  magApPairNodes.push_back(magApPair);
+		  magApNodes.push_back(magApPair);
 	  }
 }
 
@@ -425,13 +425,13 @@ int main (int argc, char *argv[])
   //All Link is 50Mbps and 0.1ms delay
   //Backbone Addressing
   NS_LOG_UNCOND("Assign lmaMagNodes Addresses");
-  lmaMagDevs = csmaLmaMag.Install(lmaMagNodes);
+  lmaMagCsmaDevs = csmaLmaMag.Install(lmaMagNodes);
   for (int i = 0; i <= backBoneCnt; i++)
   {
 	  std::ostringstream out("");
 	  out << "3ffe:1::";
 	  out << i+1;
-	  iifc = AssignSingleIpv6Address(lmaMagDevs.Get(i), Ipv6Address(out.str().c_str()), 64);
+	  iifc = AssignSingleIpv6Address(lmaMagCsmaDevs.Get(i), Ipv6Address(out.str().c_str()), 64);
 	  backboneIfs.Add(iifc);
 	  out.str("");
   }
@@ -482,15 +482,15 @@ int main (int argc, char *argv[])
   BridgeHelper bridge;
   for (int i = 0; i < backBoneCnt; i++)
   {
-	  magApPairDevs.push_back(csmaLmaMag.Install(magApPairNodes[i]));
-	  magApPairDevs[i].Get(0)->SetAddress(magMacAddrs[i]);
+	  magApCsmaDevs.push_back(csmaLmaMag.Install(magApNodes[i]));
+	  magApCsmaDevs[i].Get(0)->SetAddress(magMacAddrs[i]);
 	  std::ostringstream out("");
 	  out << "3ffe:1:" << i+1 << "::1";
-	  magIfs.push_back(AssignSingleIpv6Address(magApPairDevs[i].Get(0), Ipv6Address(out.str().c_str()), 64));
+	  magIfs.push_back(AssignSingleIpv6Address(magApCsmaDevs[i].Get(0), Ipv6Address(out.str().c_str()), 64));
 	  out.str("");
-	  apDevs.push_back(wifi.Install (wifiPhy, wifiMac, magApPairNodes[i].Get(1)));
-	  magBrDevs.push_back(bridge.Install (aps.Get(i), NetDeviceContainer(apDevs[i], magApPairDevs[i].Get(1))));
-	  iifc = AssignWithoutAddress(magApPairDevs[i].Get(1));
+	  apWifiDevs.push_back(wifi.Install (wifiPhy, wifiMac, magApNodes[i].Get(1)));
+	  magBrDevs.push_back(bridge.Install (aps.Get(i), NetDeviceContainer(apWifiDevs[i], magApCsmaDevs[i].Get(1))));
+	  iifc = AssignWithoutAddress(magApCsmaDevs[i].Get(1));
 	  magIfs[i].Add(iifc);
 	  magIfs[i].SetForwarding(0, true);
 	  magIfs[i].SetDefaultRouteInAllNodes(0);
@@ -500,7 +500,7 @@ int main (int argc, char *argv[])
   for (int i = 0; i < backBoneCnt; i++)
   {
 	  magOut << "MAG" << i << " Addresses: " << magIfs[i].GetAddress(0,0) << " and " << magIfs[i].GetAddress(0,1) << "\n";
-	  apOut << "AP" << i << " Mac Addresses: " << magApPairDevs[i].Get(1)->GetAddress() << "\n";
+	  apOut << "AP" << i << " Mac Addresses: " << magApCsmaDevs[i].Get(1)->GetAddress() << "\n";
   }
   NS_LOG_UNCOND(magOut.str() << apOut.str());
 
@@ -586,14 +586,14 @@ int main (int argc, char *argv[])
   //Pcap
   AsciiTraceHelper ascii;
 
-  csmaLmaMag.EnablePcap(std::string ("csma-lma-mag"), lmaMagDevs, false);
+  csmaLmaMag.EnablePcap(std::string ("csma-lma-mag"), lmaMagCsmaDevs, false);
   csmaLmaMag.EnablePcap(std::string ("csma-lma-cn"), lmaCnDevs, false);
 
   for (int i = 0; i < backBoneCnt; i++)
   {
-	  wifiPhy.EnablePcap ("wifi-ap", apDevs[i].Get(0));
-	  csmaLmaMag.EnablePcap("csma-mag->ap", magApPairDevs[i].Get(0));
-	  csmaLmaMag.EnablePcap("csma-ap", magApPairDevs[i].Get(1));
+	  wifiPhy.EnablePcap ("wifi-ap", apWifiDevs[i].Get(0));
+	  csmaLmaMag.EnablePcap("csma-mag->ap", magApCsmaDevs[i].Get(0));
+	  csmaLmaMag.EnablePcap("csma-ap", magApCsmaDevs[i].Get(1));
   }
 
   wifiPhy.EnablePcap ("wifi-ext-mnns", mnnsExtDevs);
